@@ -1,5 +1,5 @@
-import 'package:dukaandiary/pages/home_pages.dart';
-// import 'package:dukaandiary/pages/login_page.dart';
+
+import 'package:dukaandiary/pages/login_page.dart';
 import 'package:flutter/material.dart';
 
 // import 'package:dhukaan/Pages/SignupPage.dart';p
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
    return MaterialApp(
     debugShowCheckedModeBanner: false,
-    home:HomePages(),
+    home:LoginPage(),
    );
   }
 }
