@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 import 'package:dhukaan/Pages/loginpage.dart';
 import 'package:flutter/material.dart';
+=======
+
+import 'package:dukaandiary/pages/login_page.dart';
+import 'package:flutter/material.dart';
+
+>>>>>>> origin/main
 // import 'package:dhukaan/Pages/SignupPage.dart';p
 
 void main() {
