@@ -39,11 +39,12 @@ class _HomePagesState extends State<HomePages> {
                     color: Colors.white,
                   ),
                 ),
+                
               ],
             ),
             const SizedBox(height: 30),
             const Text(
-              "Transaction",
+              "Worked",
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
@@ -91,7 +92,7 @@ class _HomePagesState extends State<HomePages> {
                               Icon(Icons.arrow_upward, size: 35, color: Colors.green),
                               SizedBox(height: 10),
                               Text(
-                                "0.0",
+                                "15000",
                                 style: TextStyle(
                                   fontSize: 35,
                                   fontWeight: FontWeight.bold,
@@ -123,7 +124,7 @@ class _HomePagesState extends State<HomePages> {
                           Icon(Icons.arrow_downward, size: 35, color: Colors.red),
                           SizedBox(height: 10),
                           Text(
-                            "0.0",
+                            "4530",
                             style: TextStyle(
                               fontSize: 35,
                               fontWeight: FontWeight.bold,
@@ -148,48 +149,51 @@ class _HomePagesState extends State<HomePages> {
               ),
             ),
             const SizedBox(height: 20),
-            ListView.builder(
+           ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: 5,
+              itemCount: 2,
               itemBuilder: (context, index) {
                 return Card(
-                //   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                //   elevation: 5,
-                //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                //   child: ListTile(
-                //     leading: const Icon(Icons.person, color: Colors.blue),
-                //     title: Text('PayPex Solution ${index + 1}' ,
-                //         style: const TextStyle(fontWeight: FontWeight.bold)),
-                        
-                //     subtitle: const Text('Transaction details here'),
-                //     // trailing: const Icon(Icons.more_vert),
-                //   ),
-                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                elevation: 5,
-                shape: RoundedRectangleBorder(borderRadius:BorderRadius.circular(15)),
-                
-
-
-                 );
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.person, color: Colors.blue),
+                        title: Text('PayPex Solution ${index + 1}',
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                          'Transaction details here: ${index % 2 == 0 ? "Cash" : "UPI"}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      const Divider(thickness: 1, indent: 16, endIndent: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Payment: ${index % 2 == 0 ? "Done" : "Pending"}',
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Date: ${index % 2 == 0 ? "2025-02-17" : "2025-02-24"}', // Replace with dynamic date if needed
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               },
-
             ),
+
           ],
         ),
-      ),
-
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue[900],
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.contacts), label: "Contacts"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: "Report"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
       ),
     );
   }
