@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dukaandiary/pages/components/contact_card.dart';
+import 'package:dukaandiary/components/contact_card.dart';
 
 class ContactPage extends StatefulWidget {
   const ContactPage({super.key});

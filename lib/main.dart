@@ -1,8 +1,8 @@
 import 'package:dukaandiary/pages/contact_page.dart';
-import 'package:dukaandiary/history_page.dart';
+import 'package:dukaandiary/pages/history_page.dart';
 import 'package:dukaandiary/pages/home_pages.dart';
-import 'package:dukaandiary/profile_page.dart';
-import 'package:dukaandiary/report_page.dart';
+import 'package:dukaandiary/pages/profile_page.dart';
+import 'package:dukaandiary/pages/report_page.dart';
 import 'package:flutter/material.dart';
 // import 'package:dukaandiary/pages/login_page.dart';
 
