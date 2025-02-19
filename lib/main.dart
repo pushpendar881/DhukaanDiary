@@ -1,3 +1,4 @@
+import 'package:dukaandiary/pages/addEmployee.dart';
 import 'package:dukaandiary/pages/contact_page.dart';
 import 'package:dukaandiary/pages/history_page.dart';
 import 'package:dukaandiary/pages/home_pages.dart';
@@ -11,14 +12,12 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home:  const MainScreen() ,
     );
   }
 }
@@ -34,11 +33,11 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 2; // Set home as the default selected index
 
   final List<Widget> _pages = [
-    const  ContactPage(),
+    const ContactPage(),
     const HistoryPage(),
     const HomePages(),
     const ReportPage(),
-    const ProfilePage()
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -58,10 +57,16 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.contacts), label: "Contacts"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.contacts),
+            label: "Contacts",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: "Report"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: "Report",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
