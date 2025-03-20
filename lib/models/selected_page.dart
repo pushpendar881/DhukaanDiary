@@ -1,7 +1,7 @@
 import 'package:dukaan_diary/pages/add_employee.dart';
-import 'package:dukaan_diary/pages/add_product_page.dart';
 import 'package:dukaan_diary/pages/contact_page.dart';
 import 'package:dukaan_diary/pages/home_page.dart';
+import 'package:dukaan_diary/pages/product_page.dart';
 import 'package:dukaan_diary/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 
@@ -19,7 +19,7 @@ class _SelectedPageState extends State<SelectedPage> {
     const ContactPage(),
     const AddEmployee(),
     const HomePages(),
-    const AddProductPage(),
+    const ProductPage(),
     const ProfilePage(),
   ];
 

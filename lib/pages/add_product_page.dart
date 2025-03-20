@@ -1,55 +1,126 @@
+import 'package:dukaan_diary/components/input_field.dart';
+import 'package:dukaan_diary/components/my_app_bar.dart';
 import 'package:flutter/material.dart';
 
 class AddProductPage extends StatelessWidget {
-  const AddProductPage({super.key});
+  final product_name_controller = TextEditingController();
+  final product_number_controller = TextEditingController();
+  final product_description_controller = TextEditingController();
+  AddProductPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 150,
-        backgroundColor: Colors.blue[900],
-        elevation: 10,
-        shadowColor: Colors.black,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(40),
-            bottomRight: Radius.circular(40),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+      appBar: MyAppBar(shopname: 'Shop name', pageinfo: 'Add Products'),
+      body: Center(
+        child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: const [
-                Icon(Icons.shopping_cart, size: 35, color: Colors.white),
-                SizedBox(width: 20),
-                Text(
-                  "Sangam Steel Center",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+            const SizedBox(height: 25),
+            MyInputField(
+              heading: 'Product Name',
+              controller: product_name_controller,
+              hintText: 'Enter Your Product Name',
+            ),
+            MyInputField(
+              heading: 'Product Number',
+              controller: product_number_controller,
+              hintText: 'Enter Your Product Number',
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 25.0),
+              child: GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  margin: EdgeInsets.symmetric(horizontal: 125),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey.shade300,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, size: 25),
+                      Text('Add Items', style: TextStyle(fontSize: 20)),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 30),
-            const Text(
-              "Add Products",
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.white,
-                decorationThickness: 2,
+            Padding(
+              padding: const EdgeInsets.only(top: 25.0),
+              child: Container(
+                padding: EdgeInsets.all(25),
+                color: Colors.blue[200],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Amount',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 25),
+                      decoration: BoxDecoration(color: Colors.white),
+                      child: Text(
+                        '5000',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            MyInputField(
+              heading: 'Description',
+              controller: product_description_controller,
+              hintText: 'Enter Any Note',
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 50.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 25),
+                      decoration: BoxDecoration(color: Colors.blue),
+                      child: Text(
+                        'Save',
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 25),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 25),
+                      decoration: BoxDecoration(color: Colors.red),
+                      child: Text(
+                        'Delete',
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        centerTitle: true,
       ),
     );
   }

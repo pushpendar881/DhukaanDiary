@@ -1,3 +1,5 @@
+import 'package:dukaan_diary/components/my_app_bar.dart';
+import 'package:dukaan_diary/components/my_list_tile.dart';
 import 'package:flutter/material.dart';
 
 class HomePages extends StatefulWidget {
@@ -12,51 +14,7 @@ class _HomePagesState extends State<HomePages> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        toolbarHeight: 150,
-        backgroundColor: Colors.blue[900],
-        elevation: 10,
-        shadowColor: Colors.black.withOpacity(0.5),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(40),
-            bottomRight: Radius.circular(40),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: const [
-                Icon(Icons.shopping_cart, size: 35, color: Colors.white),
-                SizedBox(width: 10),
-                Text(
-                  "Sangam Steel Center",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "Worked",
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.white,
-                decorationThickness: 2,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-      ),
+      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Transactions'),
 
       body: SingleChildScrollView(
         child: Column(
@@ -199,17 +157,7 @@ class _HomePagesState extends State<HomePages> {
                   ),
                   child: Column(
                     children: [
-                      ListTile(
-                        leading: const Icon(Icons.person, color: Colors.blue),
-                        title: Text(
-                          'PayPex Solution ${index + 1}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          'Transaction details here: ${index % 2 == 0 ? "Cash" : "UPI"}',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
+                      MyListTile(index: index),
                       const Divider(thickness: 1, indent: 16, endIndent: 16),
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -220,14 +168,14 @@ class _HomePagesState extends State<HomePages> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Payment: ${index % 2 == 0 ? "Done" : "Pending"}',
+                              'Payment: ${index % 2 == 0 ? "Done" : "Pending"}', //WILL REPLACE REAL TIME CHECKS
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'Date: ${index % 2 == 0 ? "2025-02-17" : "2025-02-24"}', // Replace with dynamic date if needed
+                              'Date: ${index % 2 == 0 ? "2025-02-17" : "2025-02-24"}', // WILL REPLACE WITH DYNAMIC DATES
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,

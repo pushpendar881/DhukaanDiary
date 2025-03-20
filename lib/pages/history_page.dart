@@ -1,3 +1,5 @@
+import 'package:dukaan_diary/components/my_app_bar.dart';
+import 'package:dukaan_diary/components/my_list_tile.dart';
 import 'package:flutter/material.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -12,49 +14,12 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        toolbarHeight: 150,
-        backgroundColor: Colors.blue[900],
-        elevation: 10,
-        shadowColor: Colors.black.withOpacity(0.5),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(40),
-            bottomRight: Radius.circular(40),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: const [
-                SizedBox(width: 20),
-                Text(
-                  "History",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "All Transactions",
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.white,
-                decorationThickness: 2,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
+      appBar: MyAppBar(shopname: 'Shop name', pageinfo: 'All Transactions'),
+      body: ListView(
+        children: [
+          for (int i = 1; i < 15; i++) MyListTile(index: i),
+          const SizedBox(height: 50),
+        ],
       ),
     );
   }
