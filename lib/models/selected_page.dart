@@ -3,6 +3,7 @@ import 'package:dukaan_diary/pages/contact_page.dart';
 import 'package:dukaan_diary/pages/home_page.dart';
 import 'package:dukaan_diary/pages/product_page.dart';
 import 'package:dukaan_diary/pages/profile_page.dart';
+import 'package:dukaan_diary/pages/staff_page.dart';
 import 'package:flutter/material.dart';
 
 class SelectedPage extends StatefulWidget {
@@ -17,8 +18,8 @@ class _SelectedPageState extends State<SelectedPage> {
 
   final List<Widget> _pages = [
     const ContactPage(),
-    const AddEmployee(),
-    const HomePages(),
+    const StaffPage(),
+    const HomePage(),
     const ProductPage(),
     const ProfilePage(),
   ];

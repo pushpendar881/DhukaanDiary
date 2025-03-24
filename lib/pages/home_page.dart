@@ -1,30 +1,35 @@
 import 'package:dukaan_diary/components/my_app_bar.dart';
-import 'package:dukaan_diary/components/my_list_tile.dart';
 import 'package:flutter/material.dart';
 
-class HomePages extends StatefulWidget {
-  const HomePages({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<HomePages> createState() => _HomePagesState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePagesState extends State<HomePages> {
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> salesData = [
+    {"product": "Laptop", "amount": 50000},
+    {"product": "Phone", "amount": 30000},
+    {"product": "Tablet", "amount": 15000},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Transactions'),
-
-      body: SingleChildScrollView(
+      backgroundColor: Colors.grey[200],
+      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Sales Overview'),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              margin: const EdgeInsets.only(top: 5, left: 10, right: 10),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade100, Colors.tealAccent.shade100],
+                  colors: [Colors.blue.shade400, Colors.blue.shade200],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -38,101 +43,88 @@ class _HomePagesState extends State<HomePages> {
                 ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Column(
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 35,
-                                color: Colors.green,
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                "15000",
-                                style: TextStyle(
-                                  fontSize: 35,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                  const Text(
+                    "Today's Sales",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Column(
+                    children:
+                        salesData.map((sale) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 5.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.shopping_bag,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      sale['product'],
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            "Paid",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        height: 100,
-                        width: 2,
-                        color: Colors.blue.shade300,
-                      ),
-                      Column(
-                        children: const [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.arrow_downward,
-                                size: 35,
-                                color: Colors.red,
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                "4530",
-                                style: TextStyle(
-                                  fontSize: 35,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red,
+                                Text(
+                                  "₹${sale['amount']}",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            "Pending",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          );
+                        }).toList(),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/history_page'),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[200],
-                ),
-                width: 130,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+            Center(
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/history_page'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.blue.shade700,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history),
-                      const SizedBox(width: 5),
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.history, color: Colors.white),
+                      SizedBox(width: 8),
                       Text(
-                        'History',
+                        'View History',
                         style: TextStyle(
-                          fontSize: 25,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -140,57 +132,15 @@ class _HomePagesState extends State<HomePages> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 2,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Column(
-                    children: [
-                      MyListTile(index: index),
-                      const Divider(thickness: 1, indent: 16, endIndent: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Payment: ${index % 2 == 0 ? "Done" : "Pending"}', //WILL REPLACE REAL TIME CHECKS
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Date: ${index % 2 == 0 ? "2025-02-17" : "2025-02-24"}', // WILL REPLACE WITH DYNAMIC DATES
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/add_transaction_page');
+        },
+        backgroundColor: Colors.blue.shade700,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

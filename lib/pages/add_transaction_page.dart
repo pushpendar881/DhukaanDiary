@@ -1,38 +1,38 @@
-import 'package:dukaan_diary/components/my_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:dukaan_diary/components/my_app_bar.dart';
 
-class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key});
+class AddTransactionPage extends StatefulWidget {
+  const AddTransactionPage({super.key});
 
   @override
-  State<AddProductPage> createState() => _AddProductPageState();
+  State<AddTransactionPage> createState() => _AddTransactionPageState();
 }
 
-class _AddProductPageState extends State<AddProductPage> {
+class _AddTransactionPageState extends State<AddTransactionPage> {
   final TextEditingController productNameController = TextEditingController();
   final TextEditingController productNumberController = TextEditingController();
-  final TextEditingController productPriceController = TextEditingController();
-  final TextEditingController productQuantityController =
-      TextEditingController();
-  final TextEditingController productDescriptionController =
-      TextEditingController();
-  double totalPrice = 0;
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController customerNameController = TextEditingController(
+    text: "Customer",
+  );
+  double totalAmount = 0;
+  DateTime selectedDate = DateTime.now();
 
   void _calculateTotal() {
-    double price = double.tryParse(productPriceController.text) ?? 0;
-    int quantity = int.tryParse(productQuantityController.text) ?? 0;
+    double pricePerUnit = 500; // Placeholder for fetched price from backend
+    int quantity = int.tryParse(quantityController.text) ?? 0;
     setState(() {
-      totalPrice = price * quantity;
+      totalAmount = pricePerUnit * quantity;
     });
   }
 
-  void _saveProduct() {
-    String name = productNameController.text;
+  void _saveTransaction() {
+    String product = productNameController.text;
     String number = productNumberController.text;
-    String description = productDescriptionController.text;
-    if (name.isNotEmpty && number.isNotEmpty && totalPrice > 0) {
+    String customer = customerNameController.text;
+    if (product.isNotEmpty && number.isNotEmpty && totalAmount > 0) {
       print(
-        "Product Saved: $name, No: $number, Total Price: ₹$totalPrice, Description: $description",
+        "Transaction Saved: $product, $number, Quantity: ${quantityController.text}, Total: ₹$totalAmount, Customer: $customer",
       );
       Navigator.pop(context);
     } else {
@@ -45,7 +45,11 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Add Product'),
+      appBar: MyAppBar(
+        shopname: 'Shop Name',
+        pageinfo: 'Add Sales Transaction',
+      ),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -60,21 +64,15 @@ class _AddProductPageState extends State<AddProductPage> {
               decoration: const InputDecoration(labelText: "Product Number"),
             ),
             TextField(
-              controller: productPriceController,
+              controller: quantityController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Price per Unit"),
+              decoration: const InputDecoration(labelText: "Quantity Sold"),
               onChanged: (val) => _calculateTotal(),
             ),
             TextField(
-              controller: productQuantityController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Quantity"),
-              onChanged: (val) => _calculateTotal(),
-            ),
-            TextField(
-              controller: productDescriptionController,
+              controller: customerNameController,
               decoration: const InputDecoration(
-                labelText: "Product Description",
+                labelText: "Customer Name (Optional)",
               ),
             ),
             Padding(
@@ -89,14 +87,14 @@ class _AddProductPageState extends State<AddProductPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Total Price:',
+                      'Total Amount:',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      '₹$totalPrice',
+                      '₹$totalAmount',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -106,12 +104,33 @@ class _AddProductPageState extends State<AddProductPage> {
                 ),
               ),
             ),
+            ListTile(
+              title: Text(
+                "Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.calendar_today),
+                onPressed: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2023),
+                    lastDate: DateTime.now(),
+                  );
+                  if (pickedDate != null && pickedDate != selectedDate) {
+                    setState(() {
+                      selectedDate = pickedDate;
+                    });
+                  }
+                },
+              ),
+            ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: _saveProduct,
+                  onPressed: _saveTransaction,
                   child: const Text("Save"),
                 ),
                 ElevatedButton(

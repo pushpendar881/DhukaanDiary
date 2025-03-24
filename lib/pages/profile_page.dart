@@ -10,94 +10,79 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final shop_name_controller = TextEditingController();
-  final shop_password_controller = TextEditingController();
-  final shop_phone_number_controller = TextEditingController();
-  bool isToggled = false;
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController shopNameController = TextEditingController();
+  final TextEditingController gstNumberController = TextEditingController();
+  final TextEditingController phoneNumberController = TextEditingController();
+  final TextEditingController businessTypeController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Edit Profile'),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Center(child: Image.asset('lib/images/profile_pic.png')),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 10.0),
-                  child: Text(
-                    'Notifications',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 35.0),
-                  child: Switch(
-                    activeColor: Colors.blue[700],
-                    value: isToggled,
-                    onChanged: (value) {
-                      setState(() {
-                        isToggled = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
+            Center(
+              child: CircleAvatar(
+                radius: 50,
+                backgroundImage: AssetImage('lib/images/profile_pic.png'),
+              ),
+            ),
+            const SizedBox(height: 20),
+            MyInputField(
+              heading: 'Full Name',
+              controller: fullNameController,
+              hintText: 'Enter Full Name',
+            ),
+            MyInputField(
+              heading: 'Address',
+              controller: addressController,
+              hintText: 'Enter Address',
             ),
             MyInputField(
               heading: 'Shop Name',
-              controller: shop_name_controller,
+              controller: shopNameController,
               hintText: 'Enter Shop Name',
             ),
             MyInputField(
-              heading: 'Password',
-              controller: shop_password_controller,
-              hintText: 'Change Shop Password',
+              heading: 'GST Number',
+              controller: gstNumberController,
+              hintText: 'Enter GST Number',
             ),
             MyInputField(
-              heading: 'Phone  Number',
-              controller: shop_phone_number_controller,
-              hintText: 'Enter Shop Phone Number',
+              heading: 'Phone Number',
+              controller: phoneNumberController,
+              hintText: 'Enter Phone Number',
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 50.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 25),
-                      decoration: BoxDecoration(color: Colors.blue),
-                      child: Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 25),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 25),
-                      decoration: BoxDecoration(color: Colors.red),
-                      child: Text(
-                        'Log Out',
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            MyInputField(
+              heading: 'Business Type',
+              controller: businessTypeController,
+              hintText: 'Enter Business Type',
+            ),
+            MyInputField(
+              heading: 'Email',
+              controller: emailController,
+              hintText: 'Enter Email',
+            ),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text('Save', style: TextStyle(fontSize: 18)),
+                ),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('Log Out', style: TextStyle(fontSize: 18)),
+                ),
+              ],
             ),
           ],
         ),

@@ -1,102 +1,104 @@
-import 'package:dukaan_diary/components/input_field.dart';
-import 'package:dukaan_diary/components/my_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:dukaan_diary/components/my_app_bar.dart';
 
-class AddEmployee extends StatefulWidget {
-  const AddEmployee({super.key});
+class AddEmployeePage extends StatefulWidget {
+  const AddEmployeePage({super.key});
 
   @override
-  State<AddEmployee> createState() => _AddEmployeeState();
+  State<AddEmployeePage> createState() => _AddEmployeePageState();
 }
 
-class _AddEmployeeState extends State<AddEmployee> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _salaryController = TextEditingController();
-  final TextEditingController _contactController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
+class _AddEmployeePageState extends State<AddEmployeePage> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController salaryController = TextEditingController();
+  final TextEditingController contactController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  DateTime selectedDate = DateTime.now();
+  String employeeStatus = 'Active';
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+  void _saveEmployee() {
+    String name = nameController.text;
+    double? salary = double.tryParse(salaryController.text);
+    if (name.isNotEmpty && salary != null) {
+      print("Employee Saved: $name, ₹$salary, $selectedDate, $employeeStatus");
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter valid details!")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Add Employee'),
       backgroundColor: Colors.white,
-      appBar: MyAppBar(shopname: 'Shop name', pageinfo: 'Add staff'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Employee Name"),
+            ),
+            TextField(
+              controller: salaryController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Salary"),
+            ),
+            TextField(
+              controller: contactController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: "Contact Number"),
+            ),
+            TextField(
+              controller: addressController,
+              decoration: const InputDecoration(labelText: "Address"),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              title: Text("Joining Date: ${selectedDate.toLocal().toString().split(' ')[0]}"),
+              trailing: IconButton(
+                icon: const Icon(Icons.calendar_today),
+                onPressed: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2023),
+                    lastDate: DateTime.now(),
+                  );
+                  if (pickedDate != null && pickedDate != selectedDate) {
+                    setState(() {
+                      selectedDate = pickedDate;
+                    });
+                  }
+                },
+              ),
+            ),
+            DropdownButtonFormField<String>(
+              value: employeeStatus,
+              onChanged: (newValue) => setState(() => employeeStatus = newValue!),
+              items: ["Active", "Inactive"].map((status) {
+                return DropdownMenuItem(value: status, child: Text(status));
+              }).toList(),
+              decoration: const InputDecoration(labelText: "Employee Status"),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                MyInputField(
-                  //Name
-                  heading: "Name",
-                  hintText: "Enter Employee Name",
-                  controller: _nameController,
+                ElevatedButton(
+                  onPressed: _saveEmployee,
+                  child: const Text("Save"),
                 ),
-
-                //Shop name
-                MyInputField(
-                  heading: "Salary",
-                  hintText: "Enter salary",
-                  controller: _salaryController,
-                ),
-
-                //Address
-                MyInputField(
-                  heading: "Contact Number",
-                  hintText: "Enter Employee Phone number",
-                  controller: _contactController,
-                ),
-
-                MyInputField(
-                  heading: "Address",
-                  hintText: "Enter Employee Address",
-                  controller: _addressController,
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text("Cancel"),
                 ),
               ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 25.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 25),
-                      decoration: BoxDecoration(color: Colors.blue),
-                      child: Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 25),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 25),
-                      decoration: BoxDecoration(color: Colors.red),
-                      child: Text(
-                        'Delete',
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
