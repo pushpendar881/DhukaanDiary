@@ -21,7 +21,7 @@ class _SelectedPageState extends State<SelectedPage> {
     const StaffPage(),
     const HomePage(),
     const ProductPage(),
-    const ProfilePage(),
+    ProfilePage(),
   ];
 
   void _onItemTapped(int index) {

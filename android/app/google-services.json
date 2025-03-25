@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "603526614343",
+    "project_id": "dukaandiary-ec687",
+    "storage_bucket": "dukaandiary-ec687.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603526614343:android:d5c8aa49d73fdffec7d062",
+        "android_client_info": {
+          "package_name": "com.example.dukaan_diary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqmaXNMgfBVz9y8ElWHOK1-ZKGfmYIHRk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

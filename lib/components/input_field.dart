@@ -3,36 +3,35 @@ import 'package:flutter/material.dart';
 class MyInputField extends StatelessWidget {
   final String heading;
   final TextEditingController controller;
-  final String? hintText;
+  final String hintText;
+  final bool enabled; // ✅ Add this parameter
 
   const MyInputField({
-    super.key,
+    Key? key,
     required this.heading,
     required this.controller,
-    this.hintText,
-  });
+    required this.hintText,
+    this.enabled = true, // ✅ Default true
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: 10, right: 10, top: 25),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          //heading
           Text(
             heading,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          SizedBox(height: 5),
           TextField(
             controller: controller,
+            enabled: enabled, // ✅ Fix: Enable/Disable Editing
             decoration: InputDecoration(
               hintText: hintText,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              fillColor: Colors.white,
-              filled: true,
+              border: OutlineInputBorder(),
             ),
           ),
         ],
