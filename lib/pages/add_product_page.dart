@@ -48,80 +48,82 @@ class _AddProductPageState extends State<AddProductPage> {
       appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Add Product'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: productNameController,
-              decoration: const InputDecoration(labelText: "Product Name"),
-            ),
-            TextField(
-              controller: productNumberController,
-              decoration: const InputDecoration(labelText: "Product Number"),
-            ),
-            TextField(
-              controller: productPriceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Price per Unit"),
-              onChanged: (val) => _calculateTotal(),
-            ),
-            TextField(
-              controller: productQuantityController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Quantity"),
-              onChanged: (val) => _calculateTotal(),
-            ),
-            TextField(
-              controller: productDescriptionController,
-              decoration: const InputDecoration(
-                labelText: "Product Description",
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: productNameController,
+                decoration: const InputDecoration(labelText: "Product Name"),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10.0),
-              child: Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.blue[200],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Price:',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '₹$totalPrice',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+              TextField(
+                controller: productNumberController,
+                decoration: const InputDecoration(labelText: "Product Number"),
+              ),
+              TextField(
+                controller: productPriceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Price per Unit"),
+                onChanged: (val) => _calculateTotal(),
+              ),
+              TextField(
+                controller: productQuantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Quantity"),
+                onChanged: (val) => _calculateTotal(),
+              ),
+              TextField(
+                controller: productDescriptionController,
+                decoration: const InputDecoration(
+                  labelText: "Product Description",
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _saveProduct,
-                  child: const Text("Save"),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[200],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Price:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '₹$totalPrice',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text("Cancel"),
-                ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: _saveProduct,
+                    child: const Text("Save"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text("Cancel"),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

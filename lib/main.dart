@@ -12,12 +12,8 @@ import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp();
-    print("🔥 Firebase Initialized Successfully!");
-  } catch (e) {
-    print("❌ Firebase Initialization Error: $e");
-  }
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   runApp(const MyApp());
 }
 
@@ -30,8 +26,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: LoginPage(),
       routes: {
-        '/login': (context) => LoginPage(),
         '/selected_page': (context) => SelectedPage(),
+        '/login': (context) => LoginPage(),
         '/add_product_page': (context) => AddProductPage(),
         '/history_page': (context) => const HistoryPage(),
         '/add_transaction_page': (context) => const AddTransactionPage(),

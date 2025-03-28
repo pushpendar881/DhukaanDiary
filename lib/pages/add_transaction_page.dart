@@ -52,95 +52,99 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: productNameController,
-              decoration: const InputDecoration(labelText: "Product Name"),
-            ),
-            TextField(
-              controller: productNumberController,
-              decoration: const InputDecoration(labelText: "Product Number"),
-            ),
-            TextField(
-              controller: quantityController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Quantity Sold"),
-              onChanged: (val) => _calculateTotal(),
-            ),
-            TextField(
-              controller: customerNameController,
-              decoration: const InputDecoration(
-                labelText: "Customer Name (Optional)",
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: productNameController,
+                decoration: const InputDecoration(labelText: "Product Name"),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10.0),
-              child: Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.blue[200],
-                  borderRadius: BorderRadius.circular(10),
+              TextField(
+                controller: productNumberController,
+                decoration: const InputDecoration(labelText: "Product Number"),
+              ),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Quantity Sold"),
+                onChanged: (val) => _calculateTotal(),
+              ),
+              TextField(
+                controller: customerNameController,
+                decoration: const InputDecoration(
+                  labelText: "Customer Name (Optional)",
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Amount:',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[200],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Amount:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '₹$totalAmount',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                      Text(
+                        '₹$totalAmount',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              ListTile(
+                title: Text(
+                  "Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2023),
+                      lastDate: DateTime.now(),
+                    );
+                    if (pickedDate != null && pickedDate != selectedDate) {
+                      setState(() {
+                        selectedDate = pickedDate;
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: _saveTransaction,
+                    child: const Text("Save"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
                     ),
-                  ],
-                ),
+                    child: const Text("Cancel"),
+                  ),
+                ],
               ),
-            ),
-            ListTile(
-              title: Text(
-                "Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.calendar_today),
-                onPressed: () async {
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime(2023),
-                    lastDate: DateTime.now(),
-                  );
-                  if (pickedDate != null && pickedDate != selectedDate) {
-                    setState(() {
-                      selectedDate = pickedDate;
-                    });
-                  }
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _saveTransaction,
-                  child: const Text("Save"),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text("Cancel"),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

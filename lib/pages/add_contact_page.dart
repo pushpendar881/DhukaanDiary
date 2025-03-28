@@ -37,43 +37,45 @@ class _AddContactPageState extends State<AddContactPage> {
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: "Full Name"),
-            ),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: "Phone Number"),
-            ),
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: "Email (Optional)"),
-            ),
-            TextField(
-              controller: addressController,
-              decoration: const InputDecoration(labelText: "Address (Optional)"),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _saveContact,
-                  child: const Text("Save"),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text("Cancel"),
-                ),
-              ],
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "Full Name"),
+              ),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: "Phone Number"),
+              ),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: "Email (Optional)"),
+              ),
+              TextField(
+                controller: addressController,
+                decoration: const InputDecoration(labelText: "Address (Optional)"),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: _saveContact,
+                    child: const Text("Save"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text("Cancel"),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

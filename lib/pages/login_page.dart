@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dukaan_diary/pages/signup_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,7 +12,10 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController otpController = TextEditingController();
+
   bool isEmailLogin = true;
+  bool isOtpSent = false;
   String verificationId = "";
 
   void showError(String message) {
@@ -22,6 +24,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // ✅ Email & Password Login
   Future<void> loginWithEmail() async {
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -40,7 +43,12 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // ✅ Phone Number Login (OTP Verification)
   Future<void> loginWithPhone() async {
+    setState(() {
+      isOtpSent = true;
+    });
+
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: "+91${emailController.text.trim()}",
       verificationCompleted: (PhoneAuthCredential credential) async {
@@ -49,6 +57,9 @@ class _LoginPageState extends State<LoginPage> {
       },
       verificationFailed: (FirebaseAuthException e) {
         showError("Phone verification failed: ${e.message}");
+        setState(() {
+          isOtpSent = false;
+        });
       },
       codeSent: (String verificationId, int? resendToken) {
         setState(() {
@@ -62,11 +73,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Future<void> verifyOTP(String otp) async {
+  // ✅ OTP Verification Function
+  Future<void> verifyOTP() async {
     try {
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
-        smsCode: otp,
+        smsCode: otpController.text.trim(),
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
       Navigator.pushReplacementNamed(context, '/selected_page');
@@ -107,6 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 25),
 
+                // ✅ Toggle Between Email & Phone Login
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -114,6 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: () {
                         setState(() {
                           isEmailLogin = true;
+                          isOtpSent = false;
                         });
                       },
                       child: Text(
@@ -131,6 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: () {
                         setState(() {
                           isEmailLogin = false;
+                          isOtpSent = false;
                         });
                       },
                       child: Text(
@@ -147,6 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
 
+                // ✅ Email or Phone Input Field
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
                   child: TextField(
@@ -170,6 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
 
+                // ✅ Password Field for Email Login
                 if (isEmailLogin) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -188,12 +205,36 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ],
 
+                // ✅ OTP Field for Phone Login
+                if (!isEmailLogin && isOtpSent) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                    child: TextField(
+                      controller: otpController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: "Enter OTP",
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 10),
 
+                // ✅ Login / OTP Button
                 ElevatedButton(
-                  onPressed: isEmailLogin ? loginWithEmail : loginWithPhone,
+                  onPressed:
+                      isEmailLogin
+                          ? loginWithEmail
+                          : (isOtpSent ? verifyOTP : loginWithPhone),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade900,
+                    backgroundColor:
+                        Colors.blue.shade500, // ✅ Lightened Button Color
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -203,7 +244,26 @@ class _LoginPageState extends State<LoginPage> {
                       vertical: 15,
                     ),
                   ),
-                  child: Text(isEmailLogin ? "Sign In" : "Send OTP"),
+                  child: Text(
+                    isEmailLogin
+                        ? "Sign In"
+                        : (isOtpSent ? "Verify OTP" : "Send OTP"),
+                  ),
+                ),
+
+                // ✅ Sign Up Option
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => Signuppage()),
+                    );
+                  },
+                  child: const Text(
+                    "Don't have an account? Sign Up",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
