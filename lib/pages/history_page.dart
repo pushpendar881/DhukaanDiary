@@ -43,7 +43,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Sales History'),
+      appBar: MyAppBar( pageinfo: 'Sales History'),
       body: Column(
         children: [
           Padding(

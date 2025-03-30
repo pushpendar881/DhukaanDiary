@@ -43,7 +43,7 @@ class _ContactPageState extends State<ContactPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Contacts'),
+      appBar: MyAppBar( pageinfo: 'Contacts'),
       body: Column(
         children: [
           Padding(
@@ -113,7 +113,7 @@ class ContactDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Contact Details'),
+      appBar: MyAppBar( pageinfo: 'Contact Details'),
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),

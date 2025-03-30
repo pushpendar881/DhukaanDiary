@@ -47,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
             gstNumberController.text = userDoc['gstNumber'] ?? "";
             phoneNumberController.text = userDoc['phone'] ?? "";
             businessTypeController.text = userDoc['businessType'] ?? "";
-            emailController.text = userDoc['email'] ?? "";
+            emailController.text =  emailController.text.isEmpty ? user!.email ?? "" : emailController.text;
           });
         }
       } catch (e) {
@@ -108,7 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Edit Profile'),
+      appBar: MyAppBar( pageinfo: 'Edit Profile'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

@@ -30,7 +30,7 @@ class _StaffPageState extends State<StaffPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Staff Members'),
+      appBar: MyAppBar( pageinfo: 'Staff Members'),
       body: ListView.builder(
         itemCount: staffList.length,
         itemBuilder: (context, index) {

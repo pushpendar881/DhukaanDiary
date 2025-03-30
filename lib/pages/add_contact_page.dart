@@ -33,7 +33,7 @@ class _AddContactPageState extends State<AddContactPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Add Contact'),
+      appBar: MyAppBar(pageinfo: 'Add Contact'),
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),

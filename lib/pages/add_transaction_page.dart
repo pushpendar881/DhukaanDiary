@@ -46,7 +46,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(
-        shopname: 'Shop Name',
+        
         pageinfo: 'Add Sales Transaction',
       ),
       backgroundColor: Colors.white,

@@ -1,13 +1,49 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String shopname;
+class MyAppBar extends StatefulWidget implements PreferredSizeWidget {
+
   final String pageinfo;
 
-  const MyAppBar({super.key, required this.shopname, required this.pageinfo});
+  const MyAppBar({super.key ,required this.pageinfo});
 
   @override
-  Size get preferredSize => const Size.fromHeight(150); // Match toolbarHeight
+  State<MyAppBar> createState() => _MyAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(150); 
+}
+
+class _MyAppBarState extends State<MyAppBar> {
+  String shopname="ShopName";
+  User? user=FirebaseAuth.instance.currentUser;
+  
+  @override
+  void initState(){
+    super.initState();
+    _loaduserData();
+  }
+
+  Future<void> _loaduserData()async{
+    if(user!=null){
+      try{
+        DocumentSnapshot userdoc= await FirebaseFirestore.instance.collection("users").doc(user!.uid).get();
+        if(userdoc.exists && mounted){
+          setState(() {
+            shopname=userdoc['shopName'] ?? "ShopName";
+          });
+        }
+      }catch(e){
+        print("Error loading shop name: $e");
+      }
+    }
+  }
+
+  
+ // Match toolbarHeight
+  
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +78,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           const SizedBox(height: 30),
           Text(
-            pageinfo,
+            widget.pageinfo,
             style: const TextStyle(
               fontSize: 25,
               fontWeight: FontWeight.bold,

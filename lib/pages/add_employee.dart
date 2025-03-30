@@ -32,7 +32,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Add Employee'),
+      appBar: MyAppBar( pageinfo: 'Add Employee'),
       backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),

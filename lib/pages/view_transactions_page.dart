@@ -16,7 +16,7 @@ class ViewTransactionsPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Transactions'),
+      appBar: MyAppBar( pageinfo: 'Transactions'),
       body: Column(
         children: [
           Padding(

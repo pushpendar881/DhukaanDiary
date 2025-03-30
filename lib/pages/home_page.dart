@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      appBar: MyAppBar(shopname: 'Shop Name', pageinfo: 'Sales Overview'),
+      appBar: MyAppBar( pageinfo: 'Sales Overview'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
