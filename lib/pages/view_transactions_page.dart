@@ -1,5 +1,7 @@
 import 'package:dukaan_diary/components/my_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ViewTransactionsPage extends StatelessWidget {
   final String phoneNumber;
@@ -13,6 +15,8 @@ class ViewTransactionsPage extends StatelessWidget {
       {"date": "2024-03-05", "amount": 2000, "type": "Received"},
       {"date": "2024-03-10", "amount": 1500, "type": "Paid"},
     ];
+  final User? user = FirebaseAuth.instance.currentUser;
+  bool isLoading = false;
 
     return Scaffold(
       backgroundColor: Colors.grey[200],

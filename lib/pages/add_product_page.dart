@@ -23,6 +23,7 @@ class _AddProductPageState extends State<AddProductPage> {
   
   double totalPrice = 0;
   bool isLoading = false;
+  bool isProductNumberUnique = true;
   final User? user = FirebaseAuth.instance.currentUser;
   
   @override
@@ -65,16 +66,20 @@ class _AddProductPageState extends State<AddProductPage> {
         try {
           price = (data['price'] is int) 
               ? (data['price'] as int).toDouble() 
-              : (data['price'] as double? ?? 0.0);
+              : (data['price'] is String)
+                  ? double.tryParse(data['price'] as String) ?? 0.0
+                  : (data['price'] as double? ?? 0.0);
               
-          quantity = data['quantity'] as int? ?? 0;
+          quantity = (data['quantity'] is String)
+              ? int.tryParse(data['quantity'] as String) ?? 0
+              : (data['quantity'] as int? ?? 0);
         } catch (e) {
           debugPrint('Error parsing product values: $e');
         }
         
         setState(() {
           productNameController.text = data['name'] ?? "";
-          productNumberController.text = data['number'] ?? "";
+          productNumberController.text = data['productNumber'] ?? "" ;
           productPriceController.text = price.toString();
           productQuantityController.text = quantity.toString();
           productDescriptionController.text = data['description'] ?? "";
@@ -98,6 +103,46 @@ class _AddProductPageState extends State<AddProductPage> {
     });
   }
 
+  Future<bool> _checkProductNumberUnique(String productNumber) async {
+    if (productNumber.isEmpty) return false;
+    
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection("products")
+          .where("productNumber", isEqualTo: productNumber)
+          .get();
+          
+      // If editing an existing product, we need to exclude the current product ID
+      if (widget.productId != null) {
+        // Filter out the current product from results
+        final filteredDocs = snapshot.docs.where(
+          (doc) => doc.id != widget.productId
+        ).toList();
+        
+        return filteredDocs.isEmpty; // Number is unique if no other products have it
+      }
+      
+      // For new products, number is unique if no documents found
+      return snapshot.docs.isEmpty;
+    } catch (e) {
+      debugPrint('Error checking product number uniqueness: $e');
+      return false;
+    }
+  }
+
+  Future<void> _validateProductNumber(String number) async {
+    if (number.isEmpty) {
+      setState(() => isProductNumberUnique = true);
+      return;
+    }
+    
+    final isUnique = await _checkProductNumberUnique(number);
+    
+    if (mounted) {
+      setState(() => isProductNumberUnique = isUnique);
+    }
+  }
+
   Future<void> _saveProduct() async {
     if (user == null) {
       _showErrorMessage("User not authenticated");
@@ -109,11 +154,19 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
     
+    // Check product number uniqueness again before saving
+    final productNumber = productNumberController.text.trim();
+    final isUnique = await _checkProductNumberUnique(productNumber);
+    
+    if (!isUnique) {
+      _showErrorMessage("Product number must be unique");
+      return;
+    }
+    
     // Parse values
     String name = productNameController.text.trim();
-    String number = productNumberController.text.trim();
-    String price = productPriceController.text.trim();
-    String quantity = productQuantityController.text;
+    double price = double.tryParse(productPriceController.text.trim()) ?? 0.0;
+    int quantity = int.tryParse(productQuantityController.text.trim()) ?? 0;
     String description = productDescriptionController.text.trim();
     
     setState(() => isLoading = true);
@@ -123,7 +176,7 @@ class _AddProductPageState extends State<AddProductPage> {
       final productData = {
         'userId': user!.uid,
         'name': name,
-        'number': number,
+        'productNumber': productNumber,
         'price': price,
         'quantity': quantity,
         'description': description,
@@ -145,18 +198,26 @@ class _AddProductPageState extends State<AddProductPage> {
       }
       
       // Show success and navigate back
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product saved successfully!")),
-      );
-      Navigator.pop(context, true); // Return true to indicate success
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Product saved successfully!")),
+        );
+        Navigator.pop(context, true); // Return true to indicate success
+      }
     } catch (e) {
-      _showErrorMessage("Error saving product: $e");
+      if (mounted) {
+        _showErrorMessage("Error saving product: $e");
+      }
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
   
   void _showErrorMessage(String message) {
+    if (!mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -195,7 +256,13 @@ class _AddProductPageState extends State<AddProductPage> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter product number';
                         }
+                        if (!isProductNumberUnique) {
+                          return 'This product number is already in use';
+                        }
                         return null;
+                      },
+                      onChanged: (value) {
+                        _validateProductNumber(value);
                       },
                     ),
                     _buildTextFormField(
@@ -226,7 +293,7 @@ class _AddProductPageState extends State<AddProductPage> {
                           return 'Please enter quantity';
                         }
                         final quantity = int.tryParse(value);
-                        if (quantity == null || quantity <= 0) {
+                        if (quantity == null || quantity < 0) {
                           return 'Please enter a valid quantity';
                         }
                         return null;

@@ -135,7 +135,7 @@ class _ProductPageState extends State<ProductPage> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Product Number: ${product['number'] ?? 'N/A'}"),
+                              Text("Product Number: ${product['productNumber'] ?? 'N/A'}"),
                               Text("Price per Unit: ₹${price.toStringAsFixed(2)}"),
                               Text("Quantity: $quantity"),
                               Text(
