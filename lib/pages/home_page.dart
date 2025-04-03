@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:dukaan_diary/pages/trasaction_anaylsis.dart'; // Update with correct path
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -216,59 +217,226 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 20),
-              Center(
-                child: GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/history_page').then((_) {
-                    // Refresh transactions when returning from history page
-                    _fetchRecentTransactions();
-                  }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 24,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.blue.shade700,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
+              // Action buttons row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // View All Transactions Button
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/history_page').then((_) {
+                        // Refresh transactions when returning from history page
+                        _fetchRecentTransactions();
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
                         ),
-                      ],
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.blue.shade700,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.history, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'View All',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.history, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'View All Transactions',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  ),
+                  
+                  const SizedBox(width: 8), // Fixed "this.8" to "8"
+                  
+                  // Analytics Button
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TransactionAnalyticsPage(),
                           ),
+                        ).then((_) {
+                          // Refresh data when returning from analytics page
+                          _fetchRecentTransactions();
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.green.shade600,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.bar_chart, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Analytics',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Additional stats overview cards could be added here
+              if (!isLoading && errorMessage.isEmpty && recentTransactions.isNotEmpty)
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        // Total amount in recent transactions
+                        Column(
+                          children: [
+                            const Icon(Icons.payments, color: Colors.green, size: 28),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Recent Total',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              '₹${recentTransactions.fold(0.0, (total, transaction) => total + (transaction['amount'] ?? 0)).toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Customer count in recent transactions
+                        Column(
+                          children: [
+                            const Icon(Icons.person, color: Colors.blue, size: 28),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Customers',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              '${recentTransactions.length}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Average transaction amount
+                        Column(
+                          children: [
+                            const Icon(Icons.trending_up, color: Colors.orange, size: 28),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Average',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              '₹${(recentTransactions.fold(0.0, (total, transaction) => total + (transaction['amount'] ?? 0)) / recentTransactions.length).toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
+              
+              // Add a spacer to enable scrolling if content is too long
+              const SizedBox(height: 20),
+              
+              // Add a floating action button for adding new transactions
+              // Align(
+              //   alignment: Alignment.center,
+              //   child: ElevatedButton.icon(
+              //     icon: const Icon(Icons.add),
+              //     label: const Text('Add New Transaction'),
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: Colors.purple,
+              //       foregroundColor: Colors.white,
+              //       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(10),
+              //       ),
+              //     ),
+              //     onPressed: () {
+              //       Navigator.pushNamed(context, '/add_transaction_page').then((_) {
+              //         // Refresh transactions when returning from add transaction page
+              //         _fetchRecentTransactions();
+              //       });
+              //     },
+              //   ),
+              // ),
             ],
           ),
         ),
       ),
+      // Adding a floating action button for quick access
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.purple.shade700,
+        child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
           Navigator.pushNamed(context, '/add_transaction_page').then((_) {
             // Refresh transactions when returning from add transaction page
             _fetchRecentTransactions();
           });
         },
-        backgroundColor: Colors.blue.shade700,
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
