@@ -22,13 +22,25 @@ class _LoginPageState extends State<LoginPage> {
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(10),
+      ),
     );
   }
 
   void showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(10),
+      ),
     );
   }
 
@@ -59,19 +71,12 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-     UserCredential userCredential= await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      // bool hasProfile = await checkUserProfile(userCredential.user!.uid);
-    // Navigate to appropriate screen
-    // if (hasProfile) {
-    //   Navigator.pushReplacementNamed(context, '/selected_page');
-    // } else {
-    //   Navigator.pushReplacementNamed(context, '/profile');
-    // }   
-    Navigator.pushReplacementNamed(context, '/selected_page');
-     } on FirebaseAuthException catch (e) {
+      Navigator.pushReplacementNamed(context, '/selected_page');
+    } on FirebaseAuthException catch (e) {
       String errorMessage = "Login failed. Please try again.";
       if (e.code == 'user-not-found') {
         errorMessage = "No user found for that email.";
@@ -91,18 +96,7 @@ class _LoginPageState extends State<LoginPage> {
       });
     }
   }
-  // Future<bool> checkUserProfile(String uid) async{
-  //   try{
-  //     DocumentSnapshot userDoc= await FirebaseFirestore.instance
-  //     .collection("users").doc(uid).get();
-  //     if (!userDoc.exists) {
-  //     return false;
-  //   }
-  //   return true;
-  //   }catch(e){
-  //     return false;
-  //   }
-  // }
+
   // ✅ Phone Number Login (OTP Verification)
   Future<void> loginWithPhone() async {
     // Validate phone number
@@ -251,238 +245,375 @@ class _LoginPageState extends State<LoginPage> {
     await loginWithPhone();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade700,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'lib/images/DukaanDiary.png',
-                  height: 140,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.image_not_supported,
-                      size: 100,
-                      color: Colors.white,
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Welcome Back! You\'ve been missed!',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontSize: 20,
-                  ),
-                ),
-                const SizedBox(height: 25),
-
-                // ✅ Toggle Between Email & Phone Login
-                Row(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.blue.shade900,
+              Colors.blue.shade700,
+              Colors.blue.shade500,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          isEmailLogin = true;
-                          isOtpSent = false;
-                        });
-                      },
-                      child: Text(
-                        "Login with Email",
+                    // Logo with card effect
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'lib/images/DukaanDiary.png',
+                        height: 140,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.store_rounded,
+                            size: 100,
+                            color: Colors.white,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    
+                    // Welcome text with animation
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [Colors.white, Colors.white.withOpacity(0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'Welcome Back!',
                         style: TextStyle(
-                          color: isEmailLogin ? Colors.white : Colors.grey.shade400,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 28,
                         ),
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          isEmailLogin = false;
-                          isOtpSent = false;
-                        });
-                      },
-                      child: Text(
-                        "Login with Number",
-                        style: TextStyle(
-                          color: !isEmailLogin ? Colors.white : Colors.grey.shade400,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 10),
+                    const Text(
+                      'You\'ve been missed!',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white70,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Login Type Toggle
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildToggleButton(
+                            title: "Email",
+                            isActive: isEmailLogin,
+                            onTap: () {
+                              setState(() {
+                                isEmailLogin = true;
+                                isOtpSent = false;
+                              });
+                            },
+                          ),
+                          _buildToggleButton(
+                            title: "Phone",
+                            isActive: !isEmailLogin,
+                            onTap: () {
+                              setState(() {
+                                isEmailLogin = false;
+                                isOtpSent = false;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Email/Phone Input Card
+                    _buildInputCard(
+                      child: TextField(
+                        controller: emailController,
+                        keyboardType: isEmailLogin ? TextInputType.emailAddress : TextInputType.phone,
+                        style: const TextStyle(fontSize: 16),
+                        decoration: InputDecoration(
+                          hintText: isEmailLogin ? "Enter your Email" : "Enter your Phone Number",
+                          helperText: !isEmailLogin ? "10-digit number without country code" : null,
+                          helperStyle: TextStyle(color: Colors.blue.shade200),
+                          filled: false,
+                          border: InputBorder.none,
+                          prefixIcon: Icon(
+                            isEmailLogin ? Icons.email_rounded : Icons.phone_android_rounded,
+                            color: Colors.blue.shade800,
+                          ),
+                          prefixText: !isEmailLogin ? "+91 " : null,
+                          prefixStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password Field for Email Login
+                    if (isEmailLogin) ...[
+                      _buildInputCard(
+                        child: TextField(
+                          controller: passwordController,
+                          obscureText: true,
+                          style: const TextStyle(fontSize: 16),
+                          decoration: InputDecoration(
+                            hintText: "Enter your password",
+                            border: InputBorder.none,
+                            prefixIcon: Icon(
+                              Icons.lock_rounded,
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      // Forgot Password Option
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            if (emailController.text.trim().isEmpty) {
+                              showError("Please enter your email first");
+                              return;
+                            }
+                            
+                            if (!isValidEmail(emailController.text.trim())) {
+                              showError("Please enter a valid email address");
+                              return;
+                            }
+                            
+                            FirebaseAuth.instance.sendPasswordResetEmail(
+                              email: emailController.text.trim(),
+                            ).then((_) {
+                              showSuccess("Password reset email sent!");
+                            }).catchError((error) {
+                              showError("Failed to send reset email: $error");
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text(
+                            "Forgot Password?",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // OTP Field for Phone Login
+                    if (!isEmailLogin && isOtpSent) ...[
+                      _buildInputCard(
+                        child: TextField(
+                          controller: otpController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            letterSpacing: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            hintText: "• • • • • •",
+                            hintStyle: TextStyle(
+                              letterSpacing: 8,
+                              color: Colors.grey.shade400,
+                            ),
+                            border: InputBorder.none,
+                            counterText: "",
+                            prefixIcon: Icon(
+                              Icons.security_rounded,
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      // Resend OTP Option
+                      TextButton.icon(
+                        onPressed: resendOTP,
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: const Text(
+                          "Resend OTP",
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 30),
+
+                    // Login / OTP Button
+                    Container(
+                      width: double.infinity,
+                      height: 55,
+                      margin: const EdgeInsets.symmetric(horizontal: 25),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white,
+                            Colors.blue.shade200,
+                          ],
+                        ),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: isLoading
+                            ? null // Disable button when loading
+                            : isEmailLogin
+                                ? loginWithEmail
+                                : (isOtpSent ? verifyOTP : loginWithPhone),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          disabledBackgroundColor: Colors.transparent,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: isLoading
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.blue.shade800,
+                                  strokeWidth: 3,
+                                ),
+                              )
+                            : Text(
+                                isEmailLogin
+                                    ? "Sign In"
+                                    : (isOtpSent ? "Verify OTP" : "Send OTP"),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade900,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    // Sign Up Option
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Don't have an account? ",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => Signuppage()),
+                            );
+                          },
+                          child: const Text(
+                            "Sign Up",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-
-                // ✅ Email or Phone Input Field
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                  child: TextField(
-                    controller: emailController,
-                    keyboardType: isEmailLogin ? TextInputType.emailAddress : TextInputType.phone,
-                    decoration: InputDecoration(
-                      hintText: isEmailLogin ? "Enter your Email" : "Enter your Phone Number",
-                      helperText: !isEmailLogin ? "10-digit number without country code" : null,
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      prefixIcon: Icon(isEmailLogin ? Icons.email : Icons.phone),
-                      prefixText: !isEmailLogin ? "+91 " : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // ✅ Password Field for Email Login
-                if (isEmailLogin) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: TextField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: "Enter your password",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        prefixIcon: const Icon(Icons.lock),
-                      ),
-                    ),
-                  ),
-                  
-                  // ✅ Forgot Password Option
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // Add forgot password functionality
-                          if (emailController.text.trim().isEmpty) {
-                            showError("Please enter your email first");
-                            return;
-                          }
-                          
-                          if (!isValidEmail(emailController.text.trim())) {
-                            showError("Please enter a valid email address");
-                            return;
-                          }
-                          
-                          FirebaseAuth.instance.sendPasswordResetEmail(
-                            email: emailController.text.trim(),
-                          ).then((_) {
-                            showSuccess("Password reset email sent!");
-                          }).catchError((error) {
-                            showError("Failed to send reset email: $error");
-                          });
-                        },
-                        child: const Text(
-                          "Forgot Password?",
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
-                // ✅ OTP Field for Phone Login
-                if (!isEmailLogin && isOtpSent) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: TextField(
-                      controller: otpController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      decoration: InputDecoration(
-                        hintText: "Enter 6-digit OTP",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        prefixIcon: const Icon(Icons.security),
-                        counterText: "",
-                      ),
-                    ),
-                  ),
-                  
-                  // ✅ Resend OTP Option
-                  TextButton(
-                    onPressed: resendOTP,
-                    child: const Text(
-                      "Didn't receive code? Resend OTP",
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 20),
-
-                // ✅ Login / OTP Button
-                ElevatedButton(
-                  onPressed: isLoading
-                      ? null // Disable button when loading
-                      : isEmailLogin
-                          ? loginWithEmail
-                          : (isOtpSent ? verifyOTP : loginWithPhone),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade500,
-                    disabledBackgroundColor: Colors.blue.shade300,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 50,
-                      vertical: 15,
-                    ),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          isEmailLogin
-                              ? "Sign In"
-                              : (isOtpSent ? "Verify OTP" : "Send OTP"),
-                        ),
-                ),
-
-                // ✅ Sign Up Option
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Signuppage()),
-                    );
-                  },
-                  child: const Text(
-                    "Don't have an account? Sign Up",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // Helper method to build toggle buttons
+  Widget _buildToggleButton({required String title, required bool isActive, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.blue.shade800 : Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build input card
+  Widget _buildInputCard({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }

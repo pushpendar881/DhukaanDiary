@@ -34,29 +34,60 @@ class _SelectedPageState extends State<SelectedPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue[900],
-        unselectedItemColor: Colors.grey,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.contacts),
-            label: "Contacts",
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_people_outlined),
-            label: "Staff",
+          child: BottomNavigationBar(
+            elevation: 8,
+            backgroundColor: Colors.white,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: Colors.blue[900],
+            unselectedItemColor: Colors.grey,
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            selectedFontSize: 12,
+            unselectedFontSize: 10,
+            iconSize: 26,
+            items: [
+              _buildNavItem(Icons.contacts, "Contacts"),
+              _buildNavItem(Icons.emoji_people_outlined, "Staff"),
+              _buildNavItem(Icons.home_rounded, "Home"),
+              _buildNavItem(Icons.inventory_2_rounded, "Product"),
+              _buildNavItem(Icons.person, "Profile"),
+            ],
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.production_quantity_limits),
-            label: "Product",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+        ),
       ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem(IconData icon, String label) {
+    return BottomNavigationBarItem(
+      icon: Padding(
+        padding: const EdgeInsets.only(bottom: 4.0),
+        child: Icon(icon),
+      ),
+      activeIcon: Padding(
+        padding: const EdgeInsets.only(bottom: 4.0),
+        child: Icon(
+          icon,
+          size: 28,
+        ),
+      ),
+      label: label,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:dukaan_diary/pages/add_contact_page.dart';
 import 'package:dukaan_diary/pages/add_employee.dart';
 import 'package:dukaan_diary/pages/add_product_page.dart';
 import 'package:dukaan_diary/pages/add_transaction_page.dart';
+import 'package:dukaan_diary/pages/add_transaction_page_contact.dart';
 import 'package:dukaan_diary/pages/history_page.dart';
 import 'package:dukaan_diary/pages/login_page.dart';
 import 'package:dukaan_diary/pages/view_transactions_page.dart';
@@ -33,9 +34,21 @@ class MyApp extends StatelessWidget {
         '/add_employee': (context) => const AddEmployeePage(),
         '/add_contact_page': (context) => const AddContactPage(),
         '/view_transactions_page': (context) {
-          final phoneNumber =
-              ModalRoute.of(context)!.settings.arguments as String;
-          return ViewTransactionsPage(phoneNumber: phoneNumber);
+          // Extract the arguments as a Map containing both contactId and phoneNumber
+          final Map<String, String> args = ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+          return ViewTransactionsPage(
+            contactId: args['contactId']!,
+            contactName: args['contactName'] ?? '',
+            phoneNumber: args['phoneNumber']!,
+          );
+        },
+        '/add_transaction_page_contact': (context) {
+          // Extract the arguments as a Map
+          final Map<String, String> args = ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+          return AddTransactionPageContact(
+            contactId: args['contactId']!,
+            phoneNumber: args['phoneNumber']!,
+          );
         },
       },
     );

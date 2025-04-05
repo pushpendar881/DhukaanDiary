@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
-
 class MyInputField extends StatelessWidget {
   final String heading;
   final TextEditingController controller;
   final String hintText;
-  final bool enabled; // ✅ Add this parameter
+  final bool enabled;
+  final Icon? prefixIcon;
+  final TextInputType? keyboardType;
+  final int? maxLines;
 
   const MyInputField({
     Key? key,
     required this.heading,
     required this.controller,
     required this.hintText,
-    this.enabled = true, // ✅ Default true
+    this.enabled = true,
+    this.prefixIcon,
+    this.keyboardType,
+    this.maxLines = 1,
   }) : super(key: key);
 
   @override
@@ -23,15 +28,18 @@ class MyInputField extends StatelessWidget {
         children: [
           Text(
             heading,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 5),
+          const SizedBox(height: 5),
           TextField(
             controller: controller,
-            enabled: enabled, // ✅ Fix: Enable/Disable Editing
+            enabled: enabled,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
             decoration: InputDecoration(
               hintText: hintText,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              prefixIcon: prefixIcon,
             ),
           ),
         ],
