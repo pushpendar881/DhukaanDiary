@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dukaan_diary/components/my_app_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 
 class AddTransactionPage extends StatefulWidget {
   final String? transactionId;
@@ -12,39 +13,90 @@ class AddTransactionPage extends StatefulWidget {
   State<AddTransactionPage> createState() => _AddTransactionPageState();
 }
 
+// Class to represent a cart item
+class CartItem {
+  String productId;
+  String productName;
+  String productNumber;
+  int quantity;
+  double pricePerUnit;
+  
+  CartItem({
+    required this.productId,
+    required this.productName,
+    required this.productNumber,
+    required this.quantity,
+    required this.pricePerUnit,
+  });
+  
+  double get totalPrice => pricePerUnit * quantity;
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'productId': productId,
+      'productName': productName,
+      'productNumber': productNumber,
+      'quantity': quantity,
+      'pricePerUnit': pricePerUnit,
+      'totalPrice': totalPrice,
+    };
+  }
+}
+
 class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController productNameController = TextEditingController();
   final TextEditingController productNumberController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController customerNameController = TextEditingController(text: "Customer");
   
-  double pricePerUnit = 0;
-  double totalAmount = 0;
+  // Transaction ID controller
+  final TextEditingController transactionNumberController = TextEditingController();
+  
+  // List to store cart items
+  List<CartItem> cartItems = [];
+  
+  String? currentProductName;
+  double currentPricePerUnit = 0;
+  String? currentProductId;
+  
   DateTime selectedDate = DateTime.now();
-  String? originalProductNumber;
-  int? originalQuantity;
-  String? selectedProductId;
-
   bool isLoading = false;
+  bool isNewTransaction = true;
+  
+  // Store information about original transaction for editing
+  List<Map<String, dynamic>> originalItems = [];
+  
   final User? user = FirebaseAuth.instance.currentUser;
   
   @override
   void initState() {
     super.initState();
     if (widget.transactionId != null) {
+      isNewTransaction = false;
       _loadTransactionData();
+    } else {
+      // Generate a new transaction number for new transactions
+      _generateTransactionNumber();
     }
   }
 
   @override
   void dispose() {
-    // Clean up controllers to avoid memory leaks
-    productNameController.dispose();
     productNumberController.dispose();
     quantityController.dispose();
     customerNameController.dispose();
+    transactionNumberController.dispose();
     super.dispose();
+  }
+
+  // Generate a unique transaction number
+  void _generateTransactionNumber() {
+    // Format: TXN-YYYYMMDD-XXXX where XXXX is a random 4-digit number
+    final dateStr = DateTime.now().toString().split(' ')[0].replaceAll('-', '');
+    final randomDigits = Random().nextInt(9000) + 1000; // 1000-9999
+    
+    final txnNumber = "TXN-$dateStr-$randomDigits";
+    transactionNumberController.text = txnNumber;
   }
 
   Future<void> _loadTransactionData() async {
@@ -61,43 +113,40 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       if (transactionSnapshot.exists) {
         final data = transactionSnapshot.data() as Map<String, dynamic>;
         
-        // Store original product number for inventory restoration later
-        originalProductNumber = data['productnumber'];
-        
-        // Parse quantity regardless of type
-        if (data['productQuantity'] != null) {
-          if (data['productQuantity'] is String) {
-            originalQuantity = int.tryParse(data['productQuantity']);
-          } else if (data['productQuantity'] is int) {
-            originalQuantity = data['productQuantity'];
-          } else if (data['productQuantity'] is double) {
-            originalQuantity = data['productQuantity'].toInt();
-          }
-        }
-        
         setState(() {
-          productNameController.text = data['productname'] ?? "";
-          productNumberController.text = data['productnumber'] ?? "";
-          quantityController.text = data['productQuantity']?.toString() ?? "";
-          customerNameController.text = data['Customername'] ?? "";
-          totalAmount = (data['Amount'] ?? 0).toDouble();
-          pricePerUnit = originalQuantity != null && originalQuantity! > 0 
-              ? totalAmount / originalQuantity! 
-              : 0;
+          customerNameController.text = data['customerName'] ?? "Customer";
+          transactionNumberController.text = data['transactionNumber'] ?? "";
           
-          // Handle Timestamp conversion properly
-          if (data['Datetime'] != null) {
-            if (data['Datetime'] is Timestamp) {
-              selectedDate = (data['Datetime'] as Timestamp).toDate();
+          // Handle Timestamp conversion
+          if (data['dateTime'] != null) {
+            if (data['dateTime'] is Timestamp) {
+              selectedDate = (data['dateTime'] as Timestamp).toDate();
             } else {
-              // Handle other date formats if needed
               selectedDate = DateTime.now();
             }
           }
+          
+          // Load items from the transaction
+          if (data['items'] != null && data['items'] is List) {
+            final items = List<Map<String, dynamic>>.from(data['items']);
+            originalItems = items;
+            
+            // Convert to cart items
+            cartItems = items.map((item) {
+              return CartItem(
+                productId: item['productId'] ?? '',
+                productName: item['productName'] ?? '',
+                productNumber: item['productNumber'] ?? '',
+                quantity: (item['quantity'] is int) 
+                    ? item['quantity'] 
+                    : int.tryParse(item['quantity'].toString()) ?? 0,
+                pricePerUnit: (item['pricePerUnit'] is double) 
+                    ? item['pricePerUnit'] 
+                    : double.tryParse(item['pricePerUnit'].toString()) ?? 0,
+              );
+            }).toList();
+          }
         });
-        
-        // Load product information (in case price has changed)
-        await _fetchProductInfo(originalProductNumber!);
       }
     } catch (e) {
       _showErrorMessage("Error loading transaction data: $e");
@@ -109,6 +158,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Future<void> _fetchProductInfo(String productNumber) async {
     if (productNumber.isEmpty) return;
     
+    setState(() => isLoading = true);
+    
     try {
       // Query Firestore for products matching the product number
       final QuerySnapshot productSnapshot = await FirebaseFirestore.instance
@@ -117,50 +168,98 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           .limit(1)
           .get();
 
-      // Check if any matching product was found
       if (productSnapshot.docs.isNotEmpty) {
         final doc = productSnapshot.docs.first;
         final data = doc.data() as Map<String, dynamic>;
         
-        if (mounted) {
-          setState(() {
-            selectedProductId = doc.id;
-            productNameController.text = data['name'] ?? "";
-            
-            // Store price per unit
-            if (data['price'] != null) {
-              if (data['price'] is double) {
-                pricePerUnit = data['price'];
-              } else if (data['price'] is int) {
-                pricePerUnit = (data['price'] as int).toDouble();
-              } else if (data['price'] is String) {
-                pricePerUnit = double.tryParse(data['price']) ?? 0;
-              }
+        setState(() {
+          currentProductId = doc.id;
+          currentProductName = data['name'] ?? "";
+          
+          // Store price per unit
+          if (data['price'] != null) {
+            if (data['price'] is double) {
+              currentPricePerUnit = data['price'];
+            } else if (data['price'] is int) {
+              currentPricePerUnit = (data['price'] as int).toDouble();
+            } else if (data['price'] is String) {
+              currentPricePerUnit = double.tryParse(data['price']) ?? 0;
             }
-            
-            // Recalculate total amount
-            _calculateTotal();
-          });
-        }
+          }
+        });
       } else {
         // No product found with this number
-        if (mounted) {
-          setState(() {
-            selectedProductId = null;
-            pricePerUnit = 0;
-          });
-        }
+        setState(() {
+          currentProductId = null;
+          currentProductName = null;
+          currentPricePerUnit = 0;
+        });
+        _showErrorMessage("Product not found. Please check the product number.");
       }
     } catch (e) {
-      debugPrint("Error fetching product data: $e");
+      _showErrorMessage("Error fetching product data: $e");
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
-  void _calculateTotal() {
-    int quantity = int.tryParse(quantityController.text) ?? 0;
+  void _addToCart() {
+    if (currentProductId == null || currentProductName == null) {
+      _showErrorMessage("Please search for a valid product first");
+      return;
+    }
+    
+    final quantity = int.tryParse(quantityController.text.trim()) ?? 0;
+    if (quantity <= 0) {
+      _showErrorMessage("Quantity must be greater than zero");
+      return;
+    }
+    
+    // Check if this product is already in the cart
+    final existingIndex = cartItems.indexWhere(
+      (item) => item.productNumber == productNumberController.text.trim()
+    );
+    
+    if (existingIndex >= 0) {
+      // Update existing item
+      setState(() {
+        cartItems[existingIndex].quantity += quantity;
+      });
+    } else {
+      // Add new item
+      setState(() {
+        cartItems.add(CartItem(
+          productId: currentProductId!,
+          productName: currentProductName!,
+          productNumber: productNumberController.text.trim(),
+          quantity: quantity,
+          pricePerUnit: currentPricePerUnit,
+        ));
+      });
+    }
+    
+    // Clear input fields for next item
+    productNumberController.clear();
+    quantityController.clear();
     setState(() {
-      totalAmount = pricePerUnit * quantity;
+      currentProductId = null;
+      currentProductName = null;
+      currentPricePerUnit = 0;
     });
+  }
+  
+  void _removeFromCart(int index) {
+    setState(() {
+      cartItems.removeAt(index);
+    });
+  }
+
+  double _calculateTotalAmount() {
+    double total = 0;
+    for (var item in cartItems) {
+      total += item.totalPrice;
+    }
+    return total;
   }
 
   void _showErrorMessage(String message) {
@@ -174,7 +273,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Future<bool> _updateProductInventory({
     required String productNumber, 
     required int quantity, 
-    bool isDelete = false,
+    bool isReturn = false,
   }) async {
     try {
       // Query Firestore for the product
@@ -192,7 +291,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       final doc = productSnapshot.docs.first;
       final data = doc.data() as Map<String, dynamic>;
       
-      // Get current quantity as int (handle different data types)
+      // Get current quantity as int
       int currentQuantity = 0;
       if (data['quantity'] != null) {
         if (data['quantity'] is int) {
@@ -205,18 +304,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       }
       
       // Calculate new quantity
-      int newQuantity = currentQuantity;
+      int newQuantity = isReturn
+          ? currentQuantity + quantity  // Return to inventory
+          : currentQuantity - quantity;  // Remove from inventory
       
-      // If deleting a transaction, restore the inventory
-      if (isDelete) {
-        newQuantity += quantity;  // Add back the quantity
-      } else {
-        newQuantity -= quantity;  // Subtract the quantity (since it's a sale)
-      }
-      
-      // Ensure quantity doesn't go negative
-      if (newQuantity < 0) {
-        _showErrorMessage("Not enough inventory available. Only $currentQuantity units in stock.");
+      // Ensure quantity doesn't go negative for sales
+      if (!isReturn && newQuantity < 0) {
+        _showErrorMessage("Not enough inventory for ${data['name']}. Only $currentQuantity units available.");
         return false;
       }
       
@@ -236,8 +330,35 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
   }
 
+  // Check if transaction number already exists to avoid duplicates
+  Future<bool> _isTransactionNumberUnique(String transactionNumber) async {
+    if (widget.transactionId != null) {
+      // If editing, the transaction number can remain the same
+      return true;
+    }
+    
+    try {
+      final QuerySnapshot existingTransactions = await FirebaseFirestore.instance
+          .collection("transactions")
+          .where("transactionNumber", isEqualTo: transactionNumber)
+          .limit(1)
+          .get();
+          
+      return existingTransactions.docs.isEmpty;
+    } catch (e) {
+      _showErrorMessage("Error checking transaction number: $e");
+      return false;
+    }
+  }
+
   Future<void> _saveTransaction() async {
-    if (!_formKey.currentState!.validate()) {
+    if (cartItems.isEmpty) {
+      _showErrorMessage("Please add at least one product to the cart");
+      return;
+    }
+    
+    if (transactionNumberController.text.trim().isEmpty) {
+      _showErrorMessage("Transaction number is required");
       return;
     }
     
@@ -246,85 +367,58 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
     
-    final String productNumber = productNumberController.text.trim();
-    final int quantity = int.tryParse(quantityController.text.trim()) ?? 0;
-    
-    if (quantity <= 0) {
-      _showErrorMessage("Quantity must be greater than zero");
-      return;
-    }
-    
     setState(() => isLoading = true);
     
     try {
-      // First, handle inventory updates
+      // Verify transaction number uniqueness
+      final String transactionNumber = transactionNumberController.text.trim();
+      final bool isUnique = await _isTransactionNumberUnique(transactionNumber);
       
-      // If editing a transaction, restore original inventory first
-      if (widget.transactionId != null && originalProductNumber != null && originalQuantity != null) {
-        // Check if product number has changed
-        if (originalProductNumber != productNumber) {
-          // Restore inventory for the original product
+      if (!isUnique) {
+        _showErrorMessage("Transaction number already exists. Please use a different one.");
+        setState(() => isLoading = false);
+        return;
+      }
+      
+      // 1. Handle inventory updates
+      
+      // For editing: first restore original inventory if needed
+      if (widget.transactionId != null && originalItems.isNotEmpty) {
+        // Return original items to inventory
+        for (var item in originalItems) {
           await _updateProductInventory(
-            productNumber: originalProductNumber!,
-            quantity: originalQuantity!,
-            isDelete: true,  // Restore inventory
+            productNumber: item['productNumber'],
+            quantity: item['quantity'] is int 
+                ? item['quantity'] 
+                : int.tryParse(item['quantity'].toString()) ?? 0,
+            isReturn: true  // Add back to inventory
           );
-          
-          // Deduct from the new product
-          final success = await _updateProductInventory(
-            productNumber: productNumber,
-            quantity: quantity,
-            isDelete: false,  // Deduct inventory
-          );
-          
-          if (!success) {
-            setState(() => isLoading = false);
-            return;
-          }
-        } else {
-          // Same product, just update the quantity difference
-          final quantityDiff = quantity - originalQuantity!;
-          
-          if (quantityDiff != 0) {
-            // If quantityDiff is positive, we need to deduct more
-            // If negative, we're returning some inventory
-            final success = await _updateProductInventory(
-              productNumber: productNumber,
-              quantity: quantityDiff > 0 ? quantityDiff : -quantityDiff,
-              isDelete: quantityDiff < 0, // If diff is negative, we're restoring inventory
-            );
-            
-            if (!success) {
-              setState(() => isLoading = false);
-              return;
-            }
-          }
         }
-      } else {
-        // New transaction, just deduct inventory
+      }
+      
+      // Now deduct new cart items from inventory
+      for (var item in cartItems) {
         final success = await _updateProductInventory(
-          productNumber: productNumber,
-          quantity: quantity,
-          isDelete: false,  // Deduct inventory
+          productNumber: item.productNumber,
+          quantity: item.quantity,
+          isReturn: false  // Remove from inventory
         );
         
         if (!success) {
           setState(() => isLoading = false);
-          return;
+          return; // Stop if any inventory update fails
         }
       }
       
-      // Now save the transaction data
+      // 2. Save the transaction data
       final transactionData = {
         'userId': user!.uid,
-        'productname': productNameController.text.trim(),
-        'productnumber': productNumber,
-        'productQuantity': quantity,
-        'Customername': customerNameController.text.trim(),
-        'Amount': totalAmount,
-        'pricePerUnit': pricePerUnit,
-        'Datetime': selectedDate,
+        'transactionNumber': transactionNumber,
+        'customerName': customerNameController.text.trim(),
+        'totalAmount': _calculateTotalAmount(),
+        'dateTime': selectedDate,
         'updatedAt': FieldValue.serverTimestamp(),
+        'items': cartItems.map((item) => item.toMap()).toList(),
       };
       
       if (widget.transactionId != null) {
@@ -361,12 +455,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     setState(() => isLoading = true);
     
     try {
-      // Restore inventory first
-      if (originalProductNumber != null && originalQuantity != null) {
+      // Restore all items to inventory
+      for (var item in originalItems) {
         await _updateProductInventory(
-          productNumber: originalProductNumber!,
-          quantity: originalQuantity!,
-          isDelete: true, // Restore inventory
+          productNumber: item['productNumber'],
+          quantity: item['quantity'] is int 
+              ? item['quantity'] 
+              : int.tryParse(item['quantity'].toString()) ?? 0,
+          isReturn: true // Return to inventory
         );
       }
       
@@ -388,13 +484,196 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
   }
 
+  Widget _buildProductSearchForm() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Add Products",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: productNumberController,
+                    decoration: const InputDecoration(
+                      labelText: "Product Number",
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => _fetchProductInfo(productNumberController.text.trim()),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text("Search"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (currentProductName != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Product: $currentProductName",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Price: ₹${currentPricePerUnit.toStringAsFixed(2)}"),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: quantityController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: "Quantity",
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: _addToCart,
+                          icon: const Icon(Icons.add_shopping_cart),
+                          label: const Text("Add"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCartList() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Cart Items",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "${cartItems.length} item(s)",
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            if (cartItems.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text("No items in cart"),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cartItems.length,
+                itemBuilder: (context, index) {
+                  final item = cartItems[index];
+                  return ListTile(
+                    title: Text(item.productName),
+                    subtitle: Text("${item.quantity} × ₹${item.pricePerUnit.toStringAsFixed(2)}"),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "₹${item.totalPrice.toStringAsFixed(2)}",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _removeFromCart(index),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Total Amount:",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "₹${_calculateTotalAmount().toStringAsFixed(2)}",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(
         pageinfo: widget.transactionId != null ? 'Edit Transaction' : 'Add Sales Transaction',
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[100],
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -405,172 +684,95 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextFormField(
-                        controller: productNameController,
-                        decoration: const InputDecoration(
-                          labelText: "Product Name",
-                          border: OutlineInputBorder(),
-                        ),
-                        readOnly: true, // Make read-only as it should be fetched
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Product name is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: productNumberController,
-                        decoration: InputDecoration(
-                          labelText: "Product Number",
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.search),
-                            onPressed: () {
-                              _fetchProductInfo(productNumberController.text.trim());
-                            },
+                      Card(
+                        elevation: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: transactionNumberController,
+                                decoration: const InputDecoration(
+                                  labelText: "Transaction Number",
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.receipt_long),
+                                ),
+                                readOnly: !isNewTransaction, // Only editable for new transactions
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Transaction number is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: customerNameController,
+                                decoration: const InputDecoration(
+                                  labelText: "Customer Name",
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.person),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ListTile(
+                                title: Text(
+                                  "Transaction Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
+                                ),
+                                leading: const Icon(Icons.calendar_today),
+                                onTap: () async {
+                                  DateTime? pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate,
+                                    firstDate: DateTime(2023),
+                                    lastDate: DateTime.now(),
+                                  );
+                                  if (pickedDate != null && pickedDate != selectedDate) {
+                                    setState(() {
+                                      selectedDate = pickedDate;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Product number is required';
-                          }
-                          if (selectedProductId == null) {
-                            return 'Product not found';
-                          }
-                          return null;
-                        },
                       ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: quantityController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Quantity Sold",
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (val) => _calculateTotal(),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Quantity is required';
-                          }
-                          final quantity = int.tryParse(value);
-                          if (quantity == null || quantity <= 0) {
-                            return 'Please enter a valid quantity';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: customerNameController,
-                        decoration: const InputDecoration(
-                          labelText: "Customer Name (Optional)",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Price per Unit:',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '₹${pricePerUnit.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Total Amount:',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '₹${totalAmount.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ListTile(
-                        title: Text(
-                          "Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: () async {
-                            DateTime? pickedDate = await showDatePicker(
-                              context: context,
-                              initialDate: selectedDate,
-                              firstDate: DateTime(2023),
-                              lastDate: DateTime.now(),
-                            );
-                            if (pickedDate != null && pickedDate != selectedDate) {
-                              setState(() {
-                                selectedDate = pickedDate;
-                              });
-                            }
-                          },
-                        ),
-                      ),
+                      _buildProductSearchForm(),
+                      _buildCartList(),
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          ElevatedButton.icon(
-                            onPressed: _saveTransaction,
-                            icon: const Icon(Icons.save),
-                            label: Text(widget.transactionId != null ? "Update" : "Save"),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _saveTransaction,
+                              icon: const Icon(Icons.save),
+                              label: Text(widget.transactionId != null ? "Update" : "Save"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                              ),
                             ),
                           ),
-                          ElevatedButton.icon(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.cancel),
-                            label: const Text("Cancel"),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                              backgroundColor: Colors.grey,
-                              foregroundColor: Colors.white,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.cancel),
+                              label: const Text("Cancel"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                backgroundColor: Colors.grey,
+                                foregroundColor: Colors.white,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       if (widget.transactionId != null)
                         Center(
                           child: TextButton.icon(
@@ -579,7 +781,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text('Delete Transaction'),
-                                  content: const Text('Are you sure you want to delete this transaction? This will restore the product quantity to inventory.'),
+                                  content: const Text('Are you sure you want to delete this transaction? This will restore all products to inventory.'),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
