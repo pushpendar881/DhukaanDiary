@@ -5,6 +5,7 @@ import 'package:dukaan_diary/pages/add_employee.dart';
 import 'package:dukaan_diary/pages/add_product_page.dart';
 import 'package:dukaan_diary/pages/add_transaction_page.dart';
 import 'package:dukaan_diary/pages/add_transaction_page_contact.dart';
+import 'package:dukaan_diary/pages/auth_page.dart';
 import 'package:dukaan_diary/pages/history_page.dart';
 import 'package:dukaan_diary/pages/login_page.dart';
 import 'package:dukaan_diary/pages/view_transactions_page.dart';
@@ -24,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(),
+      home: AuthPage(),
       routes: {
         '/selected_page': (context) => SelectedPage(),
         '/login': (context) => LoginPage(),
@@ -35,7 +36,8 @@ class MyApp extends StatelessWidget {
         '/add_contact_page': (context) => const AddContactPage(),
         '/view_transactions_page': (context) {
           // Extract the arguments as a Map containing both contactId and phoneNumber
-          final Map<String, String> args = ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+          final Map<String, String> args =
+              ModalRoute.of(context)!.settings.arguments as Map<String, String>;
           return ViewTransactionsPage(
             contactId: args['contactId']!,
             contactName: args['contactName'] ?? '',
@@ -44,7 +46,8 @@ class MyApp extends StatelessWidget {
         },
         '/add_transaction_page_contact': (context) {
           // Extract the arguments as a Map
-          final Map<String, String> args = ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+          final Map<String, String> args =
+              ModalRoute.of(context)!.settings.arguments as Map<String, String>;
           return AddTransactionPageContact(
             contactId: args['contactId']!,
             phoneNumber: args['phoneNumber']!,
