@@ -49,12 +49,14 @@ class _HistoryPageState extends State<HistoryPage> {
           final productNumber = tx['productNumber']?.toString().toLowerCase() ?? '';
           final productName = tx['product']?.toString().toLowerCase() ?? '';
           final customerName = tx['customer']?.toString().toLowerCase() ?? '';
+          final transactionNumber = tx['transactionNumber']?.toString().toLowerCase() ?? '';
           final searchLower = query.toLowerCase();
           
           return id.contains(searchLower) || 
                  productNumber.contains(searchLower) ||
                  productName.contains(searchLower) ||
-                 customerName.contains(searchLower);
+                 customerName.contains(searchLower) ||
+                 transactionNumber.contains(searchLower);
         }).toList();
       }
     });
@@ -63,7 +65,7 @@ class _HistoryPageState extends State<HistoryPage> {
   // Extracts timestamp from any supported field name format
   DateTime? _extractTimestamp(Map<String, dynamic> data) {
     // Check for various datetime field names in order of preference
-    for (var fieldName in ['Datetime', 'datetime', 'date', 'Date', 'timestamp']) {
+    for (var fieldName in ['dateTime', 'createdAt', 'Datetime', 'datetime', 'date', 'Date', 'timestamp', 'updatedAt']) {
       if (data[fieldName] != null && data[fieldName] is Timestamp) {
         return (data[fieldName] as Timestamp).toDate();
       }
@@ -96,10 +98,15 @@ class _HistoryPageState extends State<HistoryPage> {
     });
 
     try {
+      // Debug log
+      print('Fetching transactions for user: ${user!.uid}');
+      
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('transactions')
           .where('userId', isEqualTo: user!.uid)
           .get();
+
+      print('Retrieved ${snapshot.docs.length} transactions from Firestore');
 
       // Calculate cutoff date based on filter
       DateTime now = DateTime.now();
@@ -111,16 +118,61 @@ class _HistoryPageState extends State<HistoryPage> {
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
         
+        // Debug log
+        print('Processing transaction: ${doc.id}');
+        print('Transaction fields: ${data.keys.toList()}');
+        
         // Extract date using the more robust helper function
         DateTime? transactionDate = _extractTimestamp(data);
         
-        // Skip if transaction is older than the cutoff or has no date
-        if (transactionDate == null || transactionDate.isBefore(cutoffDate)) {
+        if (transactionDate == null) {
+          print('Warning: No date found for transaction ${doc.id}');
+          continue;
+        }
+        
+        // Debug log
+        print('Transaction date: $transactionDate, Cutoff date: $cutoffDate');
+        
+        // Skip if transaction is older than the cutoff
+        if (transactionDate.isBefore(cutoffDate)) {
+          print('Transaction skipped: older than cutoff date');
           continue;
         }
 
-        // Handle multiple products scenario
-        if (data['products'] != null && data['products'] is List) {
+        // Get customer name and transaction number
+        final customerName = _getFieldValue(data, ['customerName', 'Customername', 'customer'], 'Customer');
+        final transactionNumber = _getFieldValue(data, ['transactionNumber', 'TransactionNumber', 'txnNumber'], '');
+        
+        // Handle items array (current Firebase structure)
+        if (data['items'] != null && data['items'] is List) {
+          // Debug log
+          print('Found items array with ${(data['items'] as List).length} items');
+          
+          // Multiple products in one transaction
+          final itemsList = data['items'] as List;
+          
+          for (var item in itemsList) {
+            if (item is Map<String, dynamic>) {
+              loadedTransactions.add({
+                'id': doc.id,
+                'transactionNumber': transactionNumber,
+                'product': item['productName'] ?? 'Unknown Product',
+                'productNumber': item['productNumber'] ?? 'N/A',
+                'quantity': item['quantity'] ?? 0,
+                'amount': item['totalPrice'] ?? (item['pricePerUnit'] != null && item['quantity'] != null 
+                    ? (item['pricePerUnit'] * item['quantity']).toDouble() 
+                    : 0),
+                'customer': customerName,
+                'date': transactionDate,
+                'fullData': data, // Store full data for detail view
+              });
+            }
+          }
+        }
+        // Fall back to previous products array structure
+        else if (data['products'] != null && data['products'] is List) {
+          print('Found products array');
+          
           // Multiple products in one transaction
           final productsList = data['products'] as List;
           
@@ -128,27 +180,36 @@ class _HistoryPageState extends State<HistoryPage> {
             if (product is Map<String, dynamic>) {
               loadedTransactions.add({
                 'id': doc.id,
+                'transactionNumber': transactionNumber,
                 'product': product['name'] ?? 'Unknown Product',
                 'productNumber': product['number'] ?? 'N/A',
                 'quantity': product['quantity'] ?? 0,
                 'amount': product['price'] != null && product['quantity'] != null 
                     ? (product['price'] * product['quantity']).toDouble() 
                     : 0,
-                'customer': _getFieldValue(data, ['customerName', 'Customername', 'customer'], 'Customer'),
+                'customer': customerName,
                 'date': transactionDate,
                 'fullData': data, // Store full data for detail view
               });
             }
           }
         } else {
+          print('No items or products array found, treating as single product transaction');
+          
           // Single product transaction - use helper function for field names
+          final productName = _getFieldValue(data, ['productname', 'productName', 'product'], 'Unknown Product');
+          final productNumber = _getFieldValue(data, ['productnumber', 'productNumber'], 'N/A');
+          final quantity = _getFieldValue(data, ['productQuantity', 'quantity'], 0);
+          final amount = _getFieldValue(data, ['totalAmount', 'Amount', 'amount', 'total'], 0);
+          
           loadedTransactions.add({
             'id': doc.id,
-            'product': _getFieldValue(data, ['productname', 'productName', 'product'], 'Unknown Product'),
-            'productNumber': _getFieldValue(data, ['productnumber', 'productNumber'], 'N/A'),
-            'quantity': _getFieldValue(data, ['productQuantity', 'quantity'], 0),
-            'amount': _getFieldValue(data, ['Amount', 'amount', 'total'], 0),
-            'customer': _getFieldValue(data, ['customerName', 'Customername', 'customer'], 'Customer'),
+            'transactionNumber': transactionNumber,
+            'product': productName,
+            'productNumber': productNumber,
+            'quantity': quantity,
+            'amount': amount,
+            'customer': customerName,
             'date': transactionDate,
             'fullData': data, // Store full data for detail view
           });
@@ -157,6 +218,8 @@ class _HistoryPageState extends State<HistoryPage> {
 
       // Sort transactions by date (newest first)
       loadedTransactions.sort((a, b) => b['date'].compareTo(a['date']));
+      
+      print('Processed ${loadedTransactions.length} valid transactions');
 
       setState(() {
         transactions = loadedTransactions;
@@ -417,16 +480,31 @@ class _HistoryPageState extends State<HistoryPage> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // ID and Product Number
+                    // Transaction Number and Product Number
                     Row(
                       children: [
-                        Text(
-                          "ID: ${tx['id'].toString().substring(0, min(tx['id'].toString().length, 8))}${tx['id'].toString().length > 8 ? '...' : ''}",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                        if (tx['transactionNumber']?.toString().isNotEmpty ?? false)
+                          Expanded(
+                            child: Text(
+                              "TXN: ${tx['transactionNumber']}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: Text(
+                              "ID: ${tx['id'].toString().substring(0, min(tx['id'].toString().length, 8))}${tx['id'].toString().length > 8 ? '...' : ''}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
                         const SizedBox(width: 10),
                         Text(
                           "Prod#: ${tx['productNumber'] ?? 'N/A'}",

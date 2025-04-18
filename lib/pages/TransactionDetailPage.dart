@@ -39,7 +39,7 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
 
   // Extract timestamp from any of the supported field names
   DateTime? _extractTimestamp(Map<String, dynamic> data) {
-    for (var fieldName in ['Datetime', 'datetime', 'date', 'Date', 'timestamp']) {
+    for (var fieldName in ['dateTime', 'datetime', 'date', 'Date', 'timestamp', 'createdAt', 'updatedAt']) {
       if (data[fieldName] != null && data[fieldName] is Timestamp) {
         return (data[fieldName] as Timestamp).toDate();
       }
@@ -75,46 +75,36 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
 
       final Map<String, dynamic> processedData = {
         'id': transactionDoc.id,
-        'customerId': _getFieldValue(data, ['userId', 'customerId'], 'Unknown'),
+        'userId': _getFieldValue(data, ['userId', 'customerId'], 'Unknown'),
         'customerName': _getFieldValue(data, ['customerName', 'Customername', 'customer'], 'Unknown Customer'),
-        'totalAmount': _getFieldValue(data, ['Amount', 'amount', 'totalAmount', 'total'], 0),
+        'totalAmount': _getFieldValue(data, ['totalAmount', 'Amount', 'amount', 'total'], 0),
         'date': transactionDate,
-        'paymentMethod': _getFieldValue(data, ['paymentMethod', 'paymentmode', 'payment'], 'Not specified'),
+        'transactionNumber': _getFieldValue(data, ['transactionNumber', 'txnNumber', 'invoiceNumber'], ''),
         'notes': _getFieldValue(data, ['notes', 'note', 'description'], ''),
       };
       
-      // Handle products more reliably
+      // Handle items based on the new database structure
       List<Map<String, dynamic>> items = [];
       
-      // Try various approaches to find product items
-      if (data['products'] != null && data['products'] is List) {
-        // Products are in a 'products' array
-        for (var product in data['products']) {
-          if (product is Map<String, dynamic>) {
+      if (data['items'] != null && data['items'] is List) {
+        // Items are in an 'items' array as per the database structure
+        final itemsList = List.from(data['items']);
+        for (var item in itemsList) {
+          if (item is Map<String, dynamic>) {
             items.add({
-              'productName': product['name'] ?? 'Unknown Product',
-              'productNumber': product['number'] ?? 'N/A',
-              'quantity': product['quantity'] ?? 0,
-              'unitPrice': product['price'] ?? 0,
-              'subtotal': (product['price'] ?? 0) * (product['quantity'] ?? 0),
+              'productName': item['productName'] ?? 'Unknown Product',
+              'productNumber': item['productNumber'] ?? 'N/A',
+              'productId': item['productId'] ?? '',
+              'quantity': item['quantity'] ?? 0,
+              'unitPrice': item['pricePerUnit'] ?? 0,
+              'subtotal': item['totalPrice'] ?? 0,
             });
           }
         }
-      } else if (data['items'] != null && data['items'] is List) {
-        // Items are in an 'items' array
-        for (var item in data['items']) {
-          items.add({
-            'productName': _getFieldValue(item, ['productname', 'productName', 'name'], 'Unknown Product'),
-            'productNumber': _getFieldValue(item, ['productnumber', 'productNumber', 'number'], 'N/A'),
-            'quantity': _getFieldValue(item, ['productQuantity', 'quantity'], 0),
-            'unitPrice': _getFieldValue(item, ['unitPrice', 'price'], 0),
-            'subtotal': (_getFieldValue(item, ['unitPrice', 'price'], 0) * 
-                         _getFieldValue(item, ['productQuantity', 'quantity'], 0)),
-          });
-        }
       } else {
-        // Try to fetch from subcollection
+        // Fallback for other structures
         try {
+          // Try to fetch from subcollection
           final QuerySnapshot itemsSnapshot = await FirebaseFirestore.instance
               .collection('transactions')
               .doc(widget.transactionId)
@@ -125,39 +115,17 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
             for (var doc in itemsSnapshot.docs) {
               final itemData = doc.data() as Map<String, dynamic>;
               items.add({
-                'productName': _getFieldValue(itemData, ['productname', 'productName', 'name'], 'Unknown Product'),
-                'productNumber': _getFieldValue(itemData, ['productnumber', 'productNumber', 'number'], 'N/A'),
-                'quantity': _getFieldValue(itemData, ['productQuantity', 'quantity'], 0),
-                'unitPrice': _getFieldValue(itemData, ['unitPrice', 'price'], 0),
-                'subtotal': (_getFieldValue(itemData, ['unitPrice', 'price'], 0) * 
-                             _getFieldValue(itemData, ['productQuantity', 'quantity'], 0)),
+                'productName': _getFieldValue(itemData, ['productName', 'name'], 'Unknown Product'),
+                'productNumber': _getFieldValue(itemData, ['productNumber', 'number'], 'N/A'),
+                'productId': _getFieldValue(itemData, ['productId', 'id'], ''),
+                'quantity': _getFieldValue(itemData, ['quantity'], 0),
+                'unitPrice': _getFieldValue(itemData, ['pricePerUnit', 'unitPrice', 'price'], 0),
+                'subtotal': _getFieldValue(itemData, ['totalPrice', 'subtotal'], 0),
               });
             }
-          } else {
-            // Fallback - extract from main document as it might be a single product transaction
-            final quantity = _getFieldValue(data, ['productQuantity', 'quantity'], 0);
-            final amount = _getFieldValue(data, ['Amount', 'amount'], 0);
-            
-            items.add({
-              'productName': _getFieldValue(data, ['productname', 'productName', 'product'], 'Unknown Product'),
-              'productNumber': _getFieldValue(data, ['productnumber', 'productNumber'], 'N/A'),
-              'quantity': quantity,
-              'unitPrice': quantity > 0 ? amount / quantity : 0,
-              'subtotal': amount,
-            });
           }
         } catch (e) {
-          // If all fails, create a single item from the main data
-          final quantity = _getFieldValue(data, ['productQuantity', 'quantity'], 0);
-          final amount = _getFieldValue(data, ['Amount', 'amount'], 0);
-          
-          items.add({
-            'productName': _getFieldValue(data, ['productname', 'productName', 'product'], 'Unknown Product'),
-            'productNumber': _getFieldValue(data, ['productnumber', 'productNumber'], 'N/A'),
-            'quantity': quantity,
-            'unitPrice': quantity > 0 ? amount / quantity : 0,
-            'subtotal': amount,
-          });
+          print('Error fetching items subcollection: $e');
         }
       }
 
@@ -262,8 +230,8 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
           
           const SizedBox(height: 30),
           
-          // Action buttons
-          _buildActionButtons(),
+          // Action button (only Back now)
+          _buildActionButton(),
         ],
       ),
     );
@@ -298,7 +266,10 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
                     ),
                   ),
                   Text(
-                    '# ${transactionData['id'].toString().substring(0, min(8, transactionData['id'].toString().length))}',
+                    transactionData['transactionNumber'] != null && 
+                    transactionData['transactionNumber'].toString().isNotEmpty
+                        ? transactionData['transactionNumber']
+                        : '# ${transactionData['id'].toString().substring(0, min(8, transactionData['id'].toString().length))}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -373,25 +344,6 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
                         transactionData['date'] != null
                             ? DateFormat('hh:mm a').format(transactionData['date'])
                             : 'Not specified',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Payment Method',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        transactionData['paymentMethod'],
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -643,43 +595,23 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     );
   }
   
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              // Share or print functionality would go here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Print/Share functionality coming soon')),
-              );
-            },
-            icon: const Icon(Icons.share),
-            label: const Text('Share'),
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
+  Widget _buildActionButton() {
+    return Center(
+      child: SizedBox(
+        width: 200, // Set a fixed width for the button
+        child: OutlinedButton.icon(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Back'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.blue,
+            side: const BorderSide(color: Colors.blue),
+            padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('Back'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue,
-              side: const BorderSide(color: Colors.blue),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -26,6 +26,12 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
   // Monthly transaction data
   Map<int, double> monthlyData = {};
   
+  // Total sales amount
+  double totalSalesAmount = 0;
+  
+  // Transaction count
+  int transactionCount = 0;
+  
   // Selected time period
   String selectedPeriod = 'Week'; // Default to Week
   final List<String> periods = ['Week', 'Month', 'Year'];
@@ -59,7 +65,7 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
       
       switch (selectedPeriod) {
         case 'Week':
-          startDate = endDate.subtract(const Duration(days: 7));
+          startDate = endDate.subtract(const Duration(days: 8));
           break;
         case 'Month':
           startDate = DateTime(endDate.year, endDate.month - 1, endDate.day);
@@ -78,7 +84,13 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
           .where('Datetime', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('Datetime', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .orderBy('Datetime', descending: false)
-          .get();
+          .get()
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw TimeoutException('Connection timeout. Please check your internet connection.');
+            },
+          );
       
       // Process data for charts
       _processChartData(snapshot.docs, startDate, endDate);
@@ -88,7 +100,7 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
       });
     } catch (e) {
       setState(() {
-        errorMessage = 'Error fetching transaction data: $e';
+        errorMessage = 'Error fetching transaction data: ${e.toString()}';
         isLoading = false;
       });
     }
@@ -100,6 +112,8 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
     productDistribution = {};
     monthlyData = {};
     maxDailyAmount = 0;
+    totalSalesAmount = 0;
+    transactionCount = docs.length;
     
     // Group transactions by date
     Map<String, double> dailyTotals = {};
@@ -107,13 +121,35 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
     // Process each transaction
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
-      final amount = (data['Amount'] ?? 0).toDouble();
+      
+      // Safely extract amount
+      final double amount;
+      try {
+        amount = (data['Amount'] is num)
+            ? (data['Amount'] as num).toDouble()
+            : double.tryParse(data['Amount'].toString()) ?? 0.0;
+      } catch (e) {
+        // Skip invalid amount entries
+        continue;
+      }
+      
       final product = data['productname'] ?? 'Unknown Product';
       
       // Get transaction date
-      final DateTime transactionDate = data['Datetime'] is Timestamp
-          ? (data['Datetime'] as Timestamp).toDate()
-          : DateTime.now();
+      final DateTime transactionDate;
+      try {
+         transactionDate = data['Datetime'] is Timestamp
+      ? (data['Datetime'] as Timestamp).toDate()
+      : DateTime.tryParse(data['Datetime'].toString()) ?? DateTime.now();
+  
+      print('Processing transaction from: ${transactionDate.toString()}');
+      } catch (e) {
+        // Skip invalid date entries
+        continue;
+      }
+      
+      // Update total sales amount
+      totalSalesAmount += amount;
       
       // For daily chart
       final String dateKey = DateFormat('yyyy-MM-dd').format(transactionDate);
@@ -160,15 +196,24 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
         othersTotal += sortedProducts[i].value;
       }
       
-      productDistribution = {
-        for (int i = 0; i < 5; i++) 
+      // Create a new map with top 5 products
+      Map<String, double> topProducts = {
+        for (int i = 0; i < 5 && i < sortedProducts.length; i++) 
           sortedProducts[i].key: sortedProducts[i].value
       };
       
       if (othersTotal > 0) {
-        productDistribution['Others'] = othersTotal;
+        topProducts['Others'] = othersTotal;
       }
+      
+      // Replace product distribution with our filtered version
+      productDistribution = topProducts;
     }
+  }
+
+  // Helper function to format currency
+  String _formatCurrency(double amount) {
+    return '₹${amount.toStringAsFixed(2)}';
   }
 
   @override
@@ -179,7 +224,28 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
       body: isLoading 
         ? const Center(child: CircularProgressIndicator())
         : errorMessage.isNotEmpty
-          ? Center(child: Text(errorMessage, style: const TextStyle(color: Colors.red)))
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      errorMessage, 
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _fetchTransactionData,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _fetchTransactionData,
               child: SingleChildScrollView(
@@ -231,6 +297,77 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                     
                     const SizedBox(height: 16),
                     
+                    // Summary cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Total Sales',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatCurrency(totalSalesAmount),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Transactions',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    transactionCount.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
                     // Sales trend chart
                     Card(
                       elevation: 4,
@@ -258,82 +395,129 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            SizedBox(
-                              height: 200,
-                              child: dailySpots.isEmpty 
-                                ? const Center(child: Text('No transaction data available'))
-                                : LineChart(
-                                    LineChartData(
-                                      gridData: FlGridData(show: false),
-                                      titlesData: FlTitlesData(
-                                        leftTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 40,
-                                            getTitlesWidget: (value, meta) {
-                                              if (value == 0) {
-                                                return const Text('₹0');
-                                              }
-                                              if (maxDailyAmount > 0 && value == maxDailyAmount) {
-                                                return Text('₹${value.toInt()}');
-                                              }
-                                              if (value == maxDailyAmount / 2) {
-                                                return Text('₹${(value).toInt()}');
-                                              }
-                                              return const Text('');
-                                            },
-                                          ),
-                                        ),
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 30,
-                                            getTitlesWidget: (value, meta) {
-                                              // Show only a few strategic dates for better readability
-                                              if (dailySpots.isNotEmpty) {
-                                                if (value == 0 || value == dailySpots.length - 1 || 
-                                                    value == (dailySpots.length - 1) / 2) {
-                                                  final date = DateTime.now().subtract(
-                                                    Duration(days: (dailySpots.length - 1 - value.toInt()))
-                                                  );
-                                                  return Padding(
-                                                    padding: const EdgeInsets.only(top: 8.0),
-                                                    child: Text(DateFormat('dd/MM').format(date)),
-                                                  );
-                                                }
-                                              }
-                                              return const Text('');
-                                            },
-                                          ),
-                                        ),
-                                        rightTitles: const AxisTitles(
-                                          sideTitles: SideTitles(showTitles: false),
-                                        ),
-                                        topTitles: const AxisTitles(
-                                          sideTitles: SideTitles(showTitles: false),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(show: false),
-                                      minX: 0,
-                                      maxX: dailySpots.length - 1.0,
-                                      minY: 0,
-                                      maxY: maxDailyAmount > 0 ? maxDailyAmount * 1.2 : 1000,
-                                      lineBarsData: [
-                                        LineChartBarData(
-                                          spots: dailySpots,
-                                          isCurved: true,
-                                          color: Colors.blue,
-                                          barWidth: 3,
-                                          isStrokeCapRound: true,
-                                          dotData: const FlDotData(show: false),
-                                          belowBarData: BarAreaData(
-                                            show: true,
-                                            color: Colors.blue.withOpacity(0.2),
-                                          ),
+                            dailySpots.isEmpty || dailySpots.length == 1 && dailySpots[0].y == 0
+                              ? SizedBox(
+                                  height: 200,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.bar_chart, size: 48, color: Colors.grey[400]),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No transaction data available',
+                                          style: TextStyle(color: Colors.grey[600]),
                                         ),
                                       ],
                                     ),
                                   ),
+                                )
+                              : SizedBox(
+                                height: 200,
+                                child: LineChart(
+                                  LineChartData(
+                                    gridData: FlGridData(
+                                      show: true,
+                                      drawVerticalLine: false,
+                                      horizontalInterval: maxDailyAmount > 0 ? maxDailyAmount / 4 : 250, 
+                                      getDrawingHorizontalLine: (value) => FlLine(
+                                        color: Colors.grey[300],
+                                        strokeWidth: 1,
+                                      ),
+                                    ),
+                                    titlesData: FlTitlesData(
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 40,
+                                          getTitlesWidget: (value, meta) {
+                                            if (value == 0) {
+                                              return const Text('₹0');
+                                            }
+                                            if (maxDailyAmount > 0 && (value == maxDailyAmount || 
+                                                value == maxDailyAmount / 2)) {
+                                              return Text('₹${value.toInt()}');
+                                            }
+                                            return const Text('');
+                                          },
+                                        ),
+                                      ),
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 30,
+                                          getTitlesWidget: (value, meta) {
+                                            // Show only a few strategic dates for better readability
+                                            if (dailySpots.isNotEmpty) {
+                                              final numPoints = dailySpots.length - 1;
+                                              if (value == 0 || value == numPoints || 
+                                                  (numPoints > 2 && value == numPoints / 2)) {
+                                                final date = DateTime.now().subtract(
+                                                  Duration(days: (numPoints - value.toInt()))
+                                                );
+                                                return Padding(
+                                                  padding: const EdgeInsets.only(top: 8.0),
+                                                  child: Text(DateFormat('dd/MM').format(date)),
+                                                );
+                                              }
+                                            }
+                                            return const Text('');
+                                          },
+                                        ),
+                                      ),
+                                      rightTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      topTitles: const AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                    ),
+                                    borderData: FlBorderData(
+                                      show: true,
+                                      border: Border(
+                                        left: BorderSide(color: Colors.grey[300]!),
+                                        bottom: BorderSide(color: Colors.grey[300]!),
+                                      ),
+                                    ),
+                                    minX: 0,
+                                    maxX: dailySpots.length - 1.0,
+                                    minY: 0,
+                                    maxY: maxDailyAmount > 0 ? maxDailyAmount * 1.2 : 1000,
+                                    lineBarsData: [
+                                      LineChartBarData(
+                                        spots: dailySpots,
+                                        isCurved: true,
+                                        gradient: const LinearGradient(
+                                          colors: [Colors.blue, Colors.lightBlueAccent],
+                                        ),
+                                        barWidth: 3,
+                                        isStrokeCapRound: true,
+                                        dotData: FlDotData(
+                                          show: dailySpots.length < 15, // Only show dots if few data points
+                                          getDotPainter: (spot, percent, barData, index) => 
+                                            FlDotCirclePainter(
+                                              radius: 4,
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                              strokeColor: Colors.blue,
+                                            ),
+                                        ),
+                                        belowBarData: BarAreaData(
+                                          show: true,
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.blue.withOpacity(0.3),
+                                              Colors.blue.withOpacity(0.1),
+                                              Colors.blue.withOpacity(0.0),
+                                            ],
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ),
                           ],
                         ),
@@ -362,10 +546,20 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                             ),
                             const SizedBox(height: 24),
                             productDistribution.isEmpty
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Text('No product data available'),
+                              ? SizedBox(
+                                  height: 150,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.pie_chart, size: 48, color: Colors.grey[400]),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No product data available',
+                                          style: TextStyle(color: Colors.grey[600]),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 )
                               : Column(
@@ -374,8 +568,14 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                                     final total = productDistribution.values.reduce((a, b) => a + b);
                                     final percentage = (entry.value / total * 100).toStringAsFixed(1);
                                     
+                                    // Generate a consistent color based on the product name
+                                    final int colorValue = entry.key.hashCode;
+                                    final Color barColor = entry.key == 'Others' 
+                                      ? Colors.grey 
+                                      : Color(0xFF000000 | (colorValue & 0x00FFFFFF)).withOpacity(0.8);
+                                    
                                     return Padding(
-                                      padding: const EdgeInsets.only(bottom: 12.0),
+                                      padding: const EdgeInsets.only(bottom: 16.0),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -390,7 +590,7 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                                                 ),
                                               ),
                                               Text(
-                                                '₹${entry.value.toStringAsFixed(2)} ($percentage%)',
+                                                '${_formatCurrency(entry.value)} ($percentage%)',
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 16,
@@ -398,13 +598,13 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: 6),
                                           LinearProgressIndicator(
                                             value: entry.value / total,
                                             backgroundColor: Colors.grey[200],
-                                            color: Colors.blue,
-                                            minHeight: 8,
-                                            borderRadius: BorderRadius.circular(4),
+                                            color: barColor,
+                                            minHeight: 10,
+                                            borderRadius: BorderRadius.circular(5),
                                           ),
                                         ],
                                       ),
@@ -419,7 +619,7 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                     const SizedBox(height: 16), 
                     
                     // Monthly Summary
-                    if (selectedPeriod == 'Year' && monthlyData.isNotEmpty)
+                    if (selectedPeriod == 'Year')
                       Card(
                         elevation: 4,
                         shape: RoundedRectangleBorder(
@@ -438,80 +638,148 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              SizedBox(
-                                height: 200,
-                                child: BarChart(
-                                  BarChartData(
-                                    alignment: BarChartAlignment.spaceAround,
-                                    maxY: monthlyData.values.isEmpty ? 
-                                      1000 : 
-                                      monthlyData.values.reduce((a, b) => a > b ? a : b) * 1.2,
-                                    gridData: FlGridData(
-                                      show: true,
-                                      horizontalInterval: monthlyData.values.isEmpty ? 
-                                        200 : 
-                                        monthlyData.values.reduce((a, b) => a > b ? a : b) / 5,
-                                      getDrawingHorizontalLine: (value) => FlLine(
-                                        color: Colors.grey[300],
-                                        strokeWidth: 1,
-                                      ),
-                                      drawVerticalLine: false,
-                                    ),
-                                    titlesData: FlTitlesData(
-                                      leftTitles: AxisTitles(
-                                        axisNameWidget: const Text('Amount (₹)'),
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 40,
-                                          getTitlesWidget: (value, meta) {
-                                            return value % 1000 == 0 ? 
-                                              Text('₹${value.toInt()}') : 
-                                              const Text('');
-                                          },
-                                        ),
-                                      ),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          getTitlesWidget: (value, meta) {
-                                            final List<String> months = [
-                                              'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                                            ];
-                                            if (value >= 0 && value < months.length) {
-                                              return Text(months[value.toInt()]);
-                                            }
-                                            return const Text('');
-                                          },
-                                        ),
-                                      ),
-                                      rightTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                      topTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(show: false),
-                                    barGroups: monthlyData.entries.map((entry) {
-                                      return BarChartGroupData(
-                                        x: entry.key - 1, // Month index (0-11)
-                                        barRods: [
-                                          BarChartRodData(
-                                            toY: entry.value,
-                                            color: Colors.blue,
-                                            width: 16,
-                                            borderRadius: const BorderRadius.only(
-                                              topLeft: Radius.circular(4),
-                                              topRight: Radius.circular(4),
-                                            ),
+                              monthlyData.isEmpty
+                                ? SizedBox(
+                                    height: 150,
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.bar_chart, size: 48, color: Colors.grey[400]),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'No monthly data available',
+                                            style: TextStyle(color: Colors.grey[600]),
                                           ),
                                         ],
-                                      );
-                                    }).toList(),
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(
+                                  height: 250,
+                                  child: BarChart(
+                                    BarChartData(
+                                      alignment: BarChartAlignment.spaceAround,
+                                      maxY: monthlyData.values.isEmpty ? 
+                                        1000 : 
+                                        monthlyData.values.reduce((a, b) => a > b ? a : b) * 1.2,
+                                      gridData: FlGridData(
+                                        show: true,
+                                        horizontalInterval: monthlyData.values.isEmpty ? 
+                                          200 : 
+                                          monthlyData.values.reduce((a, b) => a > b ? a : b) / 5,
+                                        getDrawingHorizontalLine: (value) => FlLine(
+                                          color: Colors.grey[300],
+                                          strokeWidth: 1,
+                                        ),
+                                        drawVerticalLine: false,
+                                      ),
+                                      titlesData: FlTitlesData(
+                                        leftTitles: AxisTitles(
+                                          axisNameWidget: const Padding(
+                                            padding: EdgeInsets.only(right: 8.0),
+                                            child: Text('Amount (₹)'),
+                                          ),
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            reservedSize: 50,
+                                            getTitlesWidget: (value, meta) {
+                                              if (value == 0) return const Text('₹0');
+                                              
+                                              // Format numbers over 1000 as 1k, 10k, etc.
+                                              if (value >= 1000) {
+                                                return Text('₹${(value/1000).toStringAsFixed(0)}k');
+                                              }
+                                              
+                                              return Text('₹${value.toInt()}');
+                                            },
+                                          ),
+                                        ),
+                                        bottomTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            reservedSize: 30,
+                                            getTitlesWidget: (value, meta) {
+                                              final List<String> months = [
+                                                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                                              ];
+                                              if (value >= 0 && value < months.length) {
+                                                return Padding(
+                                                  padding: const EdgeInsets.only(top: 8.0),
+                                                  child: Text(months[value.toInt()]),
+                                                );
+                                              }
+                                              return const Text('');
+                                            },
+                                          ),
+                                        ),
+                                        rightTitles: const AxisTitles(
+                                          sideTitles: SideTitles(showTitles: false),
+                                        ),
+                                        topTitles: const AxisTitles(
+                                          sideTitles: SideTitles(showTitles: false),
+                                        ),
+                                      ),
+                                      borderData: FlBorderData(
+                                        show: true,
+                                        border: Border(
+                                          left: BorderSide(color: Colors.grey[300]!),
+                                          bottom: BorderSide(color: Colors.grey[300]!),
+                                        ),
+                                      ),
+                                      barGroups: List.generate(12, (monthIndex) {
+                                        final monthValue = monthlyData[monthIndex + 1] ?? 0;
+                                        
+                                        return BarChartGroupData(
+                                          x: monthIndex,
+                                          barRods: [
+                                            BarChartRodData(
+                                              toY: monthValue,
+                                              gradient: const LinearGradient(
+                                                colors: [Colors.blueAccent, Colors.blue],
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                              ),
+                                              width: 16,
+                                              borderRadius: const BorderRadius.only(
+                                                topLeft: Radius.circular(4),
+                                                topRight: Radius.circular(4),
+                                              ),
+                                              backDrawRodData: BackgroundBarChartRodData(
+                                                show: true,
+                                                toY: monthlyData.values.isEmpty ? 
+                                                  1000 : 
+                                                  monthlyData.values.reduce((a, b) => a > b ? a : b) * 1.2,
+                                                color: Colors.grey[200],
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }),
+                                      barTouchData: BarTouchData(
+                                        touchTooltipData: BarTouchTooltipData(
+                                          // tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                                          tooltipPadding: const EdgeInsets.all(8),
+                                          
+                                          tooltipMargin: 8,
+                                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                            final List<String> months = [
+                                              'January', 'February', 'March', 'April', 'May', 'June',
+                                              'July', 'August', 'September', 'October', 'November', 'December'
+                                            ];
+                                            final String month = months[group.x];
+                                            final double value = rod.toY;
+                                            return BarTooltipItem(
+                                              '$month\n${_formatCurrency(value)}',
+                                              const TextStyle(color: Colors.white),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -524,4 +792,12 @@ class _TransactionAnalyticsPageState extends State<TransactionAnalyticsPage> {
             ),
     );
   }
+}
+
+// Custom TimeoutException class
+class TimeoutException implements Exception {
+  final String message;
+  TimeoutException(this.message);
+  @override
+  String toString() => message;
 }
