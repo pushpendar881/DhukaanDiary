@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AddProductPage extends StatefulWidget {
   // Optional parameter to receive product ID for editing
   final String? productId;
-  
+
   const AddProductPage({super.key, this.productId});
 
   @override
@@ -18,14 +18,16 @@ class _AddProductPageState extends State<AddProductPage> {
   final TextEditingController productNameController = TextEditingController();
   final TextEditingController productNumberController = TextEditingController();
   final TextEditingController productPriceController = TextEditingController();
-  final TextEditingController productQuantityController = TextEditingController();
-  final TextEditingController productDescriptionController = TextEditingController();
-  
+  final TextEditingController productQuantityController =
+      TextEditingController();
+  final TextEditingController productDescriptionController =
+      TextEditingController();
+
   double totalPrice = 0;
   bool isLoading = false;
   bool isProductNumberUnique = true;
   final User? user = FirebaseAuth.instance.currentUser;
-  
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +35,7 @@ class _AddProductPageState extends State<AddProductPage> {
       _loadProductData();
     }
   }
-  
+
   @override
   void dispose() {
     // Clean up controllers to avoid memory leaks
@@ -47,43 +49,46 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _loadProductData() async {
     if (user == null || widget.productId == null) return;
-    
+
     setState(() => isLoading = true);
-    
+
     try {
-      final DocumentSnapshot productSnapshot = await FirebaseFirestore.instance
-          .collection("products")
-          .doc(widget.productId)
-          .get();
+      final DocumentSnapshot productSnapshot =
+          await FirebaseFirestore.instance
+              .collection("products")
+              .doc(widget.productId)
+              .get();
 
       if (productSnapshot.exists) {
         final data = productSnapshot.data() as Map<String, dynamic>;
-        
+
         // Handle different data types from Firestore
         double price = 0;
         int quantity = 0;
-        
+
         try {
-          price = (data['price'] is int) 
-              ? (data['price'] as int).toDouble() 
-              : (data['price'] is String)
+          price =
+              (data['price'] is int)
+                  ? (data['price'] as int).toDouble()
+                  : (data['price'] is String)
                   ? double.tryParse(data['price'] as String) ?? 0.0
                   : (data['price'] as double? ?? 0.0);
-              
-          quantity = (data['quantity'] is String)
-              ? int.tryParse(data['quantity'] as String) ?? 0
-              : (data['quantity'] as int? ?? 0);
+
+          quantity =
+              (data['quantity'] is String)
+                  ? int.tryParse(data['quantity'] as String) ?? 0
+                  : (data['quantity'] as int? ?? 0);
         } catch (e) {
           debugPrint('Error parsing product values: $e');
         }
-        
+
         setState(() {
           productNameController.text = data['name'] ?? "";
-          productNumberController.text = data['productNumber'] ?? "" ;
+          productNumberController.text = data['productNumber'] ?? "";
           productPriceController.text = price.toString();
           productQuantityController.text = quantity.toString();
           productDescriptionController.text = data['description'] ?? "";
-          
+
           // Recalculate total price
           _calculateTotal();
         });
@@ -105,23 +110,24 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<bool> _checkProductNumberUnique(String productNumber) async {
     if (productNumber.isEmpty) return false;
-    
+
     try {
-      final QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection("products")
-          .where("productNumber", isEqualTo: productNumber)
-          .get();
-          
+      final QuerySnapshot snapshot =
+          await FirebaseFirestore.instance
+              .collection("products")
+              .where("productNumber", isEqualTo: productNumber)
+              .get();
+
       // If editing an existing product, we need to exclude the current product ID
       if (widget.productId != null) {
         // Filter out the current product from results
-        final filteredDocs = snapshot.docs.where(
-          (doc) => doc.id != widget.productId
-        ).toList();
-        
-        return filteredDocs.isEmpty; // Number is unique if no other products have it
+        final filteredDocs =
+            snapshot.docs.where((doc) => doc.id != widget.productId).toList();
+
+        return filteredDocs
+            .isEmpty; // Number is unique if no other products have it
       }
-      
+
       // For new products, number is unique if no documents found
       return snapshot.docs.isEmpty;
     } catch (e) {
@@ -135,9 +141,9 @@ class _AddProductPageState extends State<AddProductPage> {
       setState(() => isProductNumberUnique = true);
       return;
     }
-    
+
     final isUnique = await _checkProductNumberUnique(number);
-    
+
     if (mounted) {
       setState(() => isProductNumberUnique = isUnique);
     }
@@ -148,29 +154,29 @@ class _AddProductPageState extends State<AddProductPage> {
       _showErrorMessage("User not authenticated");
       return;
     }
-    
+
     // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     // Check product number uniqueness again before saving
     final productNumber = productNumberController.text.trim();
     final isUnique = await _checkProductNumberUnique(productNumber);
-    
+
     if (!isUnique) {
       _showErrorMessage("Product number must be unique");
       return;
     }
-    
+
     // Parse values
     String name = productNameController.text.trim();
     double price = double.tryParse(productPriceController.text.trim()) ?? 0.0;
     int quantity = int.tryParse(productQuantityController.text.trim()) ?? 0;
     String description = productDescriptionController.text.trim();
-    
+
     setState(() => isLoading = true);
-    
+
     try {
       // Create product data map
       final productData = {
@@ -183,12 +189,14 @@ class _AddProductPageState extends State<AddProductPage> {
         'totalPrice': totalPrice,
         'updatedAt': FieldValue.serverTimestamp(),
       };
-      
+
       // If creating new product
       if (widget.productId == null) {
         productData['createdAt'] = FieldValue.serverTimestamp();
-        await FirebaseFirestore.instance.collection("products").add(productData);
-      } 
+        await FirebaseFirestore.instance
+            .collection("products")
+            .add(productData);
+      }
       // If updating existing product
       else {
         await FirebaseFirestore.instance
@@ -196,7 +204,7 @@ class _AddProductPageState extends State<AddProductPage> {
             .doc(widget.productId)
             .update(productData);
       }
-      
+
       // Show success and navigate back
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -214,110 +222,118 @@ class _AddProductPageState extends State<AddProductPage> {
       }
     }
   }
-  
+
   void _showErrorMessage(String message) {
     if (!mounted) return;
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(pageinfo: widget.productId == null ? 'Add Product' : 'Edit Product'),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTextFormField(
-                      controller: productNameController,
-                      label: "Product Name",
-                      hint: "Enter product name",
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter product name';
-                        }
-                        return null;
-                      },
+      appBar: MyAppBar(
+        pageinfo: widget.productId == null ? 'Add Product' : 'Edit Product',
+      ),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTextFormField(
+                          controller: productNameController,
+                          label: "Product Name",
+                          hint: "Enter product name",
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter product name';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFormField(
+                          controller: productNumberController,
+                          label: "Product Number",
+                          hint: "Enter product number/code",
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter product number';
+                            }
+                            if (!isProductNumberUnique) {
+                              return 'This product number is already in use';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            _validateProductNumber(value);
+                          },
+                        ),
+                        _buildTextFormField(
+                          controller: productPriceController,
+                          label: "Price per Unit",
+                          hint: "Enter price per unit",
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: (val) => _calculateTotal(),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter price';
+                            }
+                            final price = double.tryParse(value);
+                            if (price == null || price <= 0) {
+                              return 'Please enter a valid price';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFormField(
+                          controller: productQuantityController,
+                          label: "Quantity",
+                          hint: "Enter quantity",
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) => _calculateTotal(),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter quantity';
+                            }
+                            final quantity = int.tryParse(value);
+                            if (quantity == null || quantity < 0) {
+                              return 'Please enter a valid quantity';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFormField(
+                          controller: productDescriptionController,
+                          label: "Product Description",
+                          hint: "Enter product description",
+                          maxLines: 3,
+                          validator: null, // Optional field
+                        ),
+                        const SizedBox(height: 20),
+                        _buildTotalPriceCard(),
+                        const SizedBox(height: 24),
+                        _buildActionButtons(),
+                      ],
                     ),
-                    _buildTextFormField(
-                      controller: productNumberController,
-                      label: "Product Number",
-                      hint: "Enter product number/code",
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter product number';
-                        }
-                        if (!isProductNumberUnique) {
-                          return 'This product number is already in use';
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        _validateProductNumber(value);
-                      },
-                    ),
-                    _buildTextFormField(
-                      controller: productPriceController,
-                      label: "Price per Unit",
-                      hint: "Enter price per unit",
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (val) => _calculateTotal(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter price';
-                        }
-                        final price = double.tryParse(value);
-                        if (price == null || price <= 0) {
-                          return 'Please enter a valid price';
-                        }
-                        return null;
-                      },
-                    ),
-                    _buildTextFormField(
-                      controller: productQuantityController,
-                      label: "Quantity",
-                      hint: "Enter quantity",
-                      keyboardType: TextInputType.number,
-                      onChanged: (val) => _calculateTotal(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter quantity';
-                        }
-                        final quantity = int.tryParse(value);
-                        if (quantity == null || quantity < 0) {
-                          return 'Please enter a valid quantity';
-                        }
-                        return null;
-                      },
-                    ),
-                    _buildTextFormField(
-                      controller: productDescriptionController,
-                      label: "Product Description",
-                      hint: "Enter product description",
-                      maxLines: 3,
-                      validator: null, // Optional field
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTotalPriceCard(),
-                    const SizedBox(height: 24),
-                    _buildActionButtons(),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
     );
   }
-  
+
   Widget _buildTextFormField({
     required TextEditingController controller,
     required String label,
@@ -334,10 +350,11 @@ class _AddProductPageState extends State<AddProductPage> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 16,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         ),
         keyboardType: keyboardType,
         onChanged: onChanged,
@@ -346,7 +363,7 @@ class _AddProductPageState extends State<AddProductPage> {
       ),
     );
   }
-  
+
   Widget _buildTotalPriceCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -366,10 +383,7 @@ class _AddProductPageState extends State<AddProductPage> {
         children: [
           const Text(
             'Total Price:',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           Text(
             '₹${totalPrice.toStringAsFixed(2)}',
@@ -383,7 +397,7 @@ class _AddProductPageState extends State<AddProductPage> {
       ),
     );
   }
-  
+
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
